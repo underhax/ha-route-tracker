@@ -1,0 +1,61 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and release HACS package
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm --prefix frontend ci --ignore-scripts
+
+      - name: Build frontend
+        run: npm --prefix frontend run build
+
+      - name: Create HACS archive
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          mkdir -p release/route_tracker
+          cp -R custom_components/route_tracker/. release/route_tracker/
+          VERSION="${RELEASE_TAG#v}"
+          if [ -z "$VERSION" ] || [ "$VERSION" = "$RELEASE_TAG" ]; then
+            echo "Release tags must start with 'v' followed by a version"
+            exit 1
+          fi
+          jq --exit-status --arg version "$VERSION" \
+            'if (.version | type) == "string" then .version = $version else error("Manifest version must be a string") end' \
+            release/route_tracker/manifest.json \
+            > release/route_tracker/manifest.tmp.json
+          mv release/route_tracker/manifest.tmp.json release/route_tracker/manifest.json
+          (
+            cd release/route_tracker
+            zip -r ../route_tracker.zip .
+          )
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
+        with:
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          files: release/route_tracker.zip
+

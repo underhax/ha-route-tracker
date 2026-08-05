@@ -1,0 +1,39 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Route Tracker einrichten",
+        "description": "Konfigurieren Sie die grundlegenden Parameter für Route Tracker.",
+        "data": {
+          "name": "Integrationsname"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Verbindung fehlgeschlagen",
+      "unknown": "Unerwarteter Fehler"
+    },
+    "abort": {
+      "already_configured": "Das Gerät ist bereits eingerichtet"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Route-Tracker-Einstellungen",
+        "description": "Wählen Sie device_tracker-Entitäten aus, deren GPS-Koordinaten mit vollständigem Verlauf verfolgt werden.",
+        "data": {
+          "tracked_entities": "Verfolgte Entitäten",
+          "minimal_distance": "Mindestdistanz (km)"
+        },
+        "data_description": {
+          "minimal_distance": "GPS-Aktualisierungen, die näher als diese Distanz am vorherigen Punkt liegen, werden ignoriert. Standard: 0,05 km (50 m)."
+        }
+      },
+      "friendly_names": {
+        "title": "Namen virtueller Sensoren",
+        "description": "Legen Sie optional einen Anzeigenamen für jeden ausgewählten device_tracker fest. Lassen Sie ein Feld leer, um den aus der Entitäts-ID abgeleiteten Namen zu verwenden."
+      }
+    }
+  }
+}

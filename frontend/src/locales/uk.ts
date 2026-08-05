@@ -1,0 +1,25 @@
+export const uk = {
+  'editor.info': 'Доступні лише device_tracker, налаштовані в Route Tracker, та особи, пов’язані з цими трекерами. Залиште список порожнім, щоб показати всі доступні сутності.',
+  'editor.trackers': 'Трекери',
+  'editor.add_tracker': '+ Додати трекер',
+  'editor.placeholder_id': 'Ідентифікатор (наприклад, person.dima)',
+  'editor.placeholder_name': 'Відображуване ім’я',
+  'editor.unsupported_person': 'Ця особа не має device_tracker, вибраного в Route Tracker. Додайте трекер до інтеграції та прив’яжіть його до цієї особи.',
+  'editor.unsupported_tracker': 'Цей device_tracker не налаштований у Route Tracker.',
+  'editor.unsupported_entity': 'Підтримуються лише особи та device_tracker, налаштовані в Route Tracker.',
+  'card.map_control': 'Керування картою',
+  'card.device': 'Пристрій:',
+  'card.date': 'Дата:',
+  'card.current_location': '<b>Поточне розташування</b><br>Або остання відома точка',
+  'card.start': 'Початок',
+  'card.name': 'Трекер маршрутів',
+  'card.description': 'Відстежуйте маршрути своїх пристроїв на карті',
+
+  'editor.minimal_distance': 'Мін. відстань (км)',
+  'editor.zones': 'Зони',
+  'editor.add_zone': '+ Додати зону',
+  'editor.theme_mode': 'Тема карти',
+  'editor.theme_auto': 'Авто (як у системі)',
+  'editor.theme_light': 'Світла',
+  'editor.theme_dark': 'Темна'
+};

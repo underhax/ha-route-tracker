@@ -1,0 +1,25 @@
+export const es = {
+  'editor.info': 'Solo están disponibles los device_tracker configurados en Route Tracker y las personas vinculadas a ellos. Deje la lista vacía para mostrar todas las entidades disponibles.',
+  'editor.trackers': 'Rastreadores',
+  'editor.add_tracker': '+ Agregar Rastreador',
+  'editor.placeholder_id': 'ID (ej. person.dima)',
+  'editor.placeholder_name': 'Nombre para mostrar',
+  'editor.unsupported_person': 'Esta persona no tiene un device_tracker seleccionado en Route Tracker. Agregue un tracker a la integración y vincúlelo a esta persona.',
+  'editor.unsupported_tracker': 'Este device_tracker no está configurado en Route Tracker.',
+  'editor.unsupported_entity': 'Solo se admiten personas y device_tracker configurados en Route Tracker.',
+  'card.map_control': 'Control del mapa',
+  'card.device': 'Dispositivo:',
+  'card.date': 'Fecha:',
+  'card.current_location': '<b>Ubicación actual</b><br>O último punto conocido',
+  'card.start': 'Inicio',
+  'card.name': 'Rastreador de Rutas',
+  'card.description': 'Rastrea las rutas de tus dispositivos en un mapa',
+
+  'editor.minimal_distance': 'Distancia mín. (km)',
+  'editor.zones': 'Zonas',
+  'editor.add_zone': '+ Agregar Zona',
+  'editor.theme_mode': 'Tema del mapa',
+  'editor.theme_auto': 'Auto (seguir sistema)',
+  'editor.theme_light': 'Claro',
+  'editor.theme_dark': 'Oscuro'
+};

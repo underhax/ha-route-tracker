@@ -1,0 +1,25 @@
+export const ru = {
+  'editor.info': 'Доступны только device_tracker, настроенные в Route Tracker, и персоны, связанные с этими трекерами. Оставьте список пустым, чтобы показать все доступные сущности.',
+  'editor.trackers': 'Трекеры на карте',
+  'editor.add_tracker': '+ Добавить трекер',
+  'editor.placeholder_id': 'ID (напр. person.dima)',
+  'editor.placeholder_name': 'Отображаемое имя',
+  'editor.unsupported_person': 'У этой персоны нет device_tracker, выбранного в Route Tracker. Добавьте трекер в интеграцию и привяжите его к персоне.',
+  'editor.unsupported_tracker': 'Этот device_tracker не настроен в Route Tracker.',
+  'editor.unsupported_entity': 'Поддерживаются только персоны и device_tracker, настроенные в Route Tracker.',
+  'card.map_control': 'Управление картой',
+  'card.device': 'Устройство:',
+  'card.date': 'Дата:',
+  'card.current_location': '<b>Текущее положение</b><br>Или последняя известная точка',
+  'card.start': 'Старт',
+  'card.name': 'Трекер Маршрутов',
+  'card.description': 'Отслеживайте маршруты ваших устройств на карте',
+
+  'editor.minimal_distance': 'Мин. дистанция (км)',
+  'editor.zones': 'Зоны',
+  'editor.add_zone': '+ Добавить зону',
+  'editor.theme_mode': 'Тема карты',
+  'editor.theme_auto': 'Авто (как в системе)',
+  'editor.theme_light': 'Светлая',
+  'editor.theme_dark': 'Тёмная'
+};

@@ -1,0 +1,39 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up Route Tracker",
+        "description": "Configure the base parameters for Route Tracker.",
+        "data": {
+          "name": "Integration Name"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect",
+      "unknown": "Unexpected error"
+    },
+    "abort": {
+      "already_configured": "Device is already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Route Tracker Settings",
+        "description": "Select device_tracker entities whose GPS coordinates will be tracked with full history.",
+        "data": {
+          "tracked_entities": "Tracked Entities",
+          "minimal_distance": "Minimum distance (km)"
+        },
+        "data_description": {
+          "minimal_distance": "GPS updates closer than this distance to the previous point will be ignored. Default: 0.05 km (50 m)."
+        }
+      },
+      "friendly_names": {
+        "title": "Virtual Sensor Names",
+        "description": "Optionally set a display name for each selected device tracker. Leave a field empty to use its entity-derived name."
+      }
+    }
+  }
+}

@@ -1,0 +1,25 @@
+export const de = {
+  'editor.info': 'Nur in Route Tracker konfigurierte device_tracker und mit ihnen verknüpfte Personen sind verfügbar. Lassen Sie die Liste leer, um alle verfügbaren Entitäten anzuzeigen.',
+  'editor.trackers': 'Tracker',
+  'editor.add_tracker': '+ Tracker hinzufügen',
+  'editor.placeholder_id': 'ID (z.B. person.dima)',
+  'editor.placeholder_name': 'Anzeigename',
+  'editor.unsupported_person': 'Diese Person hat keinen in Route Tracker ausgewählten device_tracker. Fügen Sie einen Tracker zur Integration hinzu und verknüpfen Sie ihn mit dieser Person.',
+  'editor.unsupported_tracker': 'Dieser device_tracker ist nicht in Route Tracker konfiguriert.',
+  'editor.unsupported_entity': 'Nur in Route Tracker konfigurierte Personen und device_tracker werden unterstützt.',
+  'card.map_control': 'Kartensteuerung',
+  'card.device': 'Gerät:',
+  'card.date': 'Datum:',
+  'card.current_location': '<b>Aktueller Standort</b><br>Oder letzter bekannter Punkt',
+  'card.start': 'Start',
+  'card.name': 'Routen-Tracker',
+  'card.description': 'Verfolgen Sie die Routen Ihrer Geräte auf einer Karte',
+
+  'editor.minimal_distance': 'Min. Distanz (km)',
+  'editor.zones': 'Zonen',
+  'editor.add_zone': '+ Zone hinzufügen',
+  'editor.theme_mode': 'Kartenthema',
+  'editor.theme_auto': 'Auto (Systemeinstellung)',
+  'editor.theme_light': 'Hell',
+  'editor.theme_dark': 'Dunkel'
+};
