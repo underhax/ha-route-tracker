@@ -282,6 +282,24 @@ export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEd
 
     return html`
       <div class="card-config">
+        <div>
+          <h4>${localize('editor.theme_mode', lang)}</h4>
+          <select
+            .value=${this._config.theme_mode || 'auto'}
+            @change=${(e: Event) => {
+              this._config = { ...this._config, theme_mode: (e.target as HTMLSelectElement).value };
+              this._fireConfigChanged();
+            }}
+            style="width: 100%; padding: 8px; border: 1px solid var(--divider-color, #ccc); border-radius: 4px; background: var(--card-background-color, #fff); color: var(--primary-text-color, #000);"
+          >
+            <option value="auto">${localize('editor.theme_auto', lang)}</option>
+            <option value="light">${localize('editor.theme_light', lang)}</option>
+            <option value="dark">${localize('editor.theme_dark', lang)}</option>
+          </select>
+        </div>
+
+        <hr />
+
         <p class="info">${localize('editor.info', lang)}</p>
 
         ${this._renderEntityList(
@@ -300,24 +318,6 @@ export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEd
           localize('editor.add_zone', lang),
           ['zone']
         )}
-
-        <hr />
-
-        <div>
-          <h4>${localize('editor.theme_mode', lang)}</h4>
-          <select
-            .value=${this._config.theme_mode || 'auto'}
-            @change=${(e: Event) => {
-              this._config = { ...this._config, theme_mode: (e.target as HTMLSelectElement).value };
-              this._fireConfigChanged();
-            }}
-            style="width: 100%; padding: 8px; border: 1px solid var(--divider-color, #ccc); border-radius: 4px; background: var(--card-background-color, #fff); color: var(--primary-text-color, #000);"
-          >
-            <option value="auto">${localize('editor.theme_auto', lang)}</option>
-            <option value="light">${localize('editor.theme_light', lang)}</option>
-            <option value="dark">${localize('editor.theme_dark', lang)}</option>
-          </select>
-        </div>
       </div>
     `;
   }

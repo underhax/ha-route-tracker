@@ -259,7 +259,12 @@ export class RouteTrackerCard extends LitElement {
 
   public connectedCallback(): void {
     super.connectedCallback();
-    this.updatePanelEditModeClass();
+
+    requestAnimationFrame(() => {
+      this.updatePanelEditModeClass();
+      this.startObservingPanelEditMode();
+    });
+
     this.startObservingMapSize();
   }
 
@@ -276,8 +281,6 @@ export class RouteTrackerCard extends LitElement {
   }
 
   protected firstUpdated(): void {
-    this.updatePanelEditModeClass();
-    this.startObservingPanelEditMode();
     this.initMap();
     this.loadDevices();
     this.drawZones();
@@ -316,7 +319,8 @@ export class RouteTrackerCard extends LitElement {
       element.classList.contains('edit-mode')
     );
     const isPanel = ancestors.some(element =>
-      element.matches('hui-card-options.panel')
+      (element.matches && element.matches('hui-card-options.panel')) ||
+      element.tagName === 'HUI-PANEL-VIEW'
     );
 
     this.classList.toggle('is-editing-panel', isEditMode && isPanel);

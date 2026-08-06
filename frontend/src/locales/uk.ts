@@ -1,5 +1,5 @@
 export const uk = {
-  'editor.info': 'Доступні лише device_tracker, налаштовані в Route Tracker, та особи, пов’язані з цими трекерами. Залиште список порожнім, щоб показати всі доступні сутності.',
+  'editor.info': 'Доступні лише device_tracker, налаштовані в Route Tracker, та особи, пов’язані з цими трекерами. Залиште список нижче порожнім, щоб показати всі доступні сутності.',
   'editor.trackers': 'Трекери',
   'editor.add_tracker': '+ Додати трекер',
   'editor.placeholder_id': 'Ідентифікатор (наприклад, person.dima)',

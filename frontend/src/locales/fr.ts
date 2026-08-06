@@ -1,5 +1,5 @@
 export const fr = {
-  'editor.info': 'Seuls les device_tracker configurés dans Route Tracker et les personnes qui y sont liées sont disponibles. Laissez la liste vide pour afficher toutes les entités disponibles.',
+  'editor.info': 'Seuls les device_tracker configurés dans Route Tracker et les personnes qui y sont liées sont disponibles. Laissez la liste ci-dessous vide pour afficher toutes les entités disponibles.',
   'editor.trackers': 'Trackers',
   'editor.add_tracker': '+ Ajouter un Tracker',
   'editor.placeholder_id': 'ID (ex. person.dima)',

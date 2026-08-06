@@ -1,5 +1,5 @@
 export const ru = {
-  'editor.info': 'Доступны только device_tracker, настроенные в Route Tracker, и персоны, связанные с этими трекерами. Оставьте список пустым, чтобы показать все доступные сущности.',
+  'editor.info': 'Доступны только device_tracker, настроенные в Route Tracker, и персоны, связанные с этими трекерами. Оставьте список ниже пустым, чтобы показать все доступные сущности.',
   'editor.trackers': 'Трекеры на карте',
   'editor.add_tracker': '+ Добавить трекер',
   'editor.placeholder_id': 'ID (напр. person.dima)',

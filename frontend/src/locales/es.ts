@@ -1,5 +1,5 @@
 export const es = {
-  'editor.info': 'Solo están disponibles los device_tracker configurados en Route Tracker y las personas vinculadas a ellos. Deje la lista vacía para mostrar todas las entidades disponibles.',
+  'editor.info': 'Solo están disponibles los device_tracker configurados en Route Tracker y las personas vinculadas a ellos. Deje la lista a continuación vacía para mostrar todas las entidades disponibles.',
   'editor.trackers': 'Rastreadores',
   'editor.add_tracker': '+ Agregar Rastreador',
   'editor.placeholder_id': 'ID (ej. person.dima)',
