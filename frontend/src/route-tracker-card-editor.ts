@@ -255,8 +255,8 @@ export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEd
               @value-changed=${(e: any) => this._updateItem(section, index, 'entity', e.detail.value)}
               allow-custom-entity
             ></ha-entity-picker>
-            <input type="text" 
-                   .value=${ent.name || ''} 
+            <input type="text"
+                   .value=${ent.name || ''}
                    @input=${(e: Event) => this._updateItem(section, index, 'name', (e.target as HTMLInputElement).value)}
                    placeholder="${localize('editor.placeholder_name', this.hass.language)}" />
             <button class="btn-remove" @click=${() => this._removeItem(section, index)} title="Remove">🗑</button>
@@ -276,7 +276,7 @@ export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEd
     }
 
     const lang = this.hass.language;
-    
+
     const trackerFilter = (stateObj: { entity_id: string }) =>
       isEligibleRouteEntity(stateObj.entity_id, this.hass.states);
 

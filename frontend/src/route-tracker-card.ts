@@ -49,20 +49,17 @@ function getLocalDateString(date: Date, hass?: HomeAssistant): string {
         month: '2-digit',
         day: '2-digit'
       }).formatToParts(date);
-      
+
       const year = parts.find(p => p.type === 'year')?.value;
       const month = parts.find(p => p.type === 'month')?.value;
       const day = parts.find(p => p.type === 'day')?.value;
-      
+
       if (year && month && day) {
         return `${year}-${month}-${day}`;
       }
-    } catch (e) {
-      // Fallback if timezone is invalid or unsupported
-    }
+    } catch (e) {}
   }
 
-  // Fallback to browser local time
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
@@ -256,7 +253,7 @@ export class RouteTrackerCard extends LitElement {
         link.style.alignItems = 'center';
         link.style.cursor = 'pointer';
         link.innerHTML = '<svg style="width:18px;height:18px;" viewBox="0 0 24 24"><path fill="currentColor" d="M12 9A3 3 0 0 0 9 12A3 3 0 0 0 12 15A3 3 0 0 0 15 12A3 3 0 0 0 12 9M19 19H15V21H19A2 2 0 0 0 21 19V15H19M19 3H15V5H19V9H21V5A2 2 0 0 0 19 3M5 5H9V3H5A2 2 0 0 0 3 5V9H5M5 15H3V19A2 2 0 0 0 5 21H9V19H5V15Z"/></svg>';
-        
+
         link.onclick = (e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -264,9 +261,9 @@ export class RouteTrackerCard extends LitElement {
             this.map?.fitBounds(this.routeBounds);
           }
         };
-        
+
         L.DomEvent.disableClickPropagation(container);
-        
+
         return container;
       }
     });
@@ -315,7 +312,7 @@ export class RouteTrackerCard extends LitElement {
 
   private resolveLocation(stateObj: any): [number, number] | null {
     if (!stateObj) return null;
-    
+
     if (stateObj.attributes && 'latitude' in stateObj.attributes && 'longitude' in stateObj.attributes) {
       const lat = parseFloat(stateObj.attributes.latitude);
       const lon = parseFloat(stateObj.attributes.longitude);
@@ -323,7 +320,7 @@ export class RouteTrackerCard extends LitElement {
         return [lat, lon];
       }
     }
-    
+
     if (stateObj.state && stateObj.state !== 'not_home' && stateObj.state !== 'unknown') {
       const zoneId = `zone.${stateObj.state.toLowerCase()}`;
       const zoneObj = this.hass.states[zoneId];
@@ -403,7 +400,7 @@ export class RouteTrackerCard extends LitElement {
             lastLoc = loc;
           } else {
             const dist = this.calculateDistance(lastLoc[0], lastLoc[1], loc[0], loc[1]);
-            
+
             if (dist > minDistance) {
               points.push({ loc: L.latLng(loc[0], loc[1]), timestamp: timeStr });
               lastLoc = loc;
@@ -454,10 +451,10 @@ export class RouteTrackerCard extends LitElement {
     const beadFillColor = isDark ? '#45929c' : '#5db4cb';
 
     if (points.length > 1) {
-      const polyline = L.polyline(points.map(p => p.loc), { 
-        color: routeColor, 
+      const polyline = L.polyline(points.map(p => p.loc), {
+        color: routeColor,
         weight: 6,
-        opacity: routeOpacity 
+        opacity: routeOpacity
       }).addTo(this.routeLayer);
 
       if ((window as any).L.polylineDecorator) {
@@ -539,7 +536,7 @@ export class RouteTrackerCard extends LitElement {
       <div id="map"></div>
       <div class="control-panel">
         <h3>${localize('card.map_control', lang)}</h3>
-        
+
         <div class="input-group">
           <label>${localize('card.device', lang)}</label>
           <select @change=${this.handleDeviceChange} .value=${this.selectedDevice}>
@@ -549,10 +546,10 @@ export class RouteTrackerCard extends LitElement {
 
         <div class="input-group">
           <label>${localize('card.date', lang)}</label>
-          <input 
-            type="date" 
-            .value=${this.selectedDate} 
-            @change=${this.handleDateChange} 
+          <input
+            type="date"
+            .value=${this.selectedDate}
+            @change=${this.handleDateChange}
 
             max=${getLocalDateString(new Date(), this.hass)}
           />
