@@ -23,5 +23,6 @@ export const ru = {
   'editor.theme_mode': 'Тема карты',
   'editor.theme_auto': 'Авто (как в системе)',
   'editor.theme_light': 'Светлая',
-  'editor.theme_dark': 'Тёмная'
+  'editor.theme_dark': 'Тёмная',
+  "editor.map_provider": "Провайдер карты",
 };

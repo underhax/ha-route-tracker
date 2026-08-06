@@ -23,5 +23,6 @@ export const es = {
   'editor.theme_mode': 'Tema del mapa',
   'editor.theme_auto': 'Auto (seguir sistema)',
   'editor.theme_light': 'Claro',
-  'editor.theme_dark': 'Oscuro'
+  'editor.theme_dark': 'Oscuro',
+  "editor.map_provider": "Proveedor de mapas",
 };

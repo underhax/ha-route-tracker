@@ -96,7 +96,7 @@ lovelace:
 
 ### Add and configure the card
 
-Add **Route Tracker** from the card picker. The visual editor configures tracked entities, zones, display names, and the map theme. YAML is optional and available through the card editor's code view.
+Add **Route Tracker** from the card picker. The visual editor configures the default map provider, map theme, tracked entities, and zones. Both tracked entities and zones support optional custom display names. YAML is optional and available through the card editor's code view.
 
 The card always offers the `device_tracker` entities selected in the integration. A `person` appears in the card editor only when at least one of its linked device trackers is also selected in the integration. A tracker linked to a person but not selected in Route Tracker does not make that person available.
 
@@ -111,7 +111,14 @@ zones:
   - entity: zone.home
     name: Home
 theme_mode: auto
+map_provider: osm_default
 ```
+
+Optional YAML configuration parameters:
+- `theme_mode`: `auto` (follows Home Assistant's theme), `light`, or `dark`.
+- `map_provider`: `osm_default` (OpenStreetMap DE), `carto_voyager` (CartoDB Voyager), or `esri_satellite` (Esri Satellite).
+
+The map interface provides built-in controls to switch between available map providers and manually toggle the map's light/dark mode on the fly.
 
 
 The example assumes `device_tracker.phone` is selected in the integration and linked to `person.alex`.
@@ -128,11 +135,11 @@ Routes are available only after the corresponding virtual sensor begins receivin
 
 Route Tracker does not require an API key, a long-lived access token, or an external route service. History requests use the current authenticated Home Assistant session.
 
-Route Tracker currently uses map tiles from `https://tile.openstreetmap.de/`. The browser connects to that service while rendering the map. Consider this external request when evaluating your network and location-privacy requirements.
+Route Tracker uses map tiles from `https://tile.openstreetmap.de/` (default), `https://cartocdn.com/` (Voyager), and `https://arcgisonline.com/` (Satellite). The browser connects to these services while rendering the map. Consider these external requests when evaluating your network and location-privacy requirements.
 
 ## Development
 
-See [DEVELOPMENT.md](DEVELOPMENT.md) for local setup, builds, checks, and tests.
+See [DEVELOPMENT](DEVELOPMENT.md) for local setup, builds, checks, and tests.
 
 ## Support
 

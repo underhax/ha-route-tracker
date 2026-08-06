@@ -23,5 +23,6 @@ export const uk = {
   'editor.theme_mode': 'Тема карти',
   'editor.theme_auto': 'Авто (як у системі)',
   'editor.theme_light': 'Світла',
-  'editor.theme_dark': 'Темна'
+  'editor.theme_dark': 'Темна',
+  "editor.map_provider": "Провайдер карти",
 };

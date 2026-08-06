@@ -23,5 +23,6 @@ export const en = {
   'editor.theme_mode': 'Map Theme',
   'editor.theme_auto': 'Auto (follow system)',
   'editor.theme_light': 'Light',
-  'editor.theme_dark': 'Dark'
+  'editor.theme_dark': 'Dark',
+  "editor.map_provider": "Map Provider",
 };

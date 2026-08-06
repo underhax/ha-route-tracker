@@ -23,5 +23,6 @@ export const fr = {
   'editor.theme_mode': 'Thème de la carte',
   'editor.theme_auto': 'Auto (suivre le système)',
   'editor.theme_light': 'Clair',
-  'editor.theme_dark': 'Sombre'
+  'editor.theme_dark': 'Sombre',
+  "editor.map_provider": "Fournisseur de carte",
 };

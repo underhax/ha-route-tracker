@@ -283,6 +283,22 @@ export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEd
     return html`
       <div class="card-config">
         <div>
+          <h4>${localize('editor.map_provider', lang)}</h4>
+          <select
+            .value=${this._config.map_provider || 'osm_default'}
+            @change=${(e: Event) => {
+              this._config = { ...this._config, map_provider: (e.target as HTMLSelectElement).value };
+              this._fireConfigChanged();
+            }}
+            style="width: 100%; padding: 8px; border: 1px solid var(--divider-color, #ccc); border-radius: 4px; background: var(--card-background-color, #fff); color: var(--primary-text-color, #000);"
+          >
+            <option value="osm_default">OpenStreetMap DE</option>
+            <option value="carto_voyager">CartoDB Voyager</option>
+            <option value="esri_satellite">Esri Satellite</option>
+          </select>
+        </div>
+
+        <div>
           <h4>${localize('editor.theme_mode', lang)}</h4>
           <select
             .value=${this._config.theme_mode || 'auto'}

@@ -87,6 +87,10 @@ export class RouteTrackerCard extends LitElement {
   @state() private selectedDate: string = getLocalDateString(new Date());
   @state() private devices: { entity_id: string; name: string }[] = [];
   @state() private controlsOpen: boolean = false;
+  @state() private _isSatellite: boolean = false;
+  @state() private _manualTheme?: 'light' | 'dark';
+  private _lastPoints: RoutePoint[] = [];
+  private _lastIsDark: boolean | null = null;
 
   private map?: L.Map;
   private editModeObserver?: MutationObserver;
@@ -143,7 +147,9 @@ export class RouteTrackerCard extends LitElement {
       filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
     }
     #map.dark-mode .leaflet-control-attribution,
-    #map.dark-mode .zone-label {
+    #map.dark-mode .zone-label,
+    #map.dark-mode .leaflet-control-layers,
+    #map.dark-mode .leaflet-bar {
       filter: invert(100%) hue-rotate(180deg) brightness(105%) contrast(111%);
     }
     .control-panel {
@@ -248,6 +254,69 @@ export class RouteTrackerCard extends LitElement {
     select:focus, input[type="date"]:focus {
       border-color: #64b5f6;
     }
+
+    .leaflet-control-layers {
+      background: rgba(32, 33, 36, 0.9) !important;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      border-radius: 12px !important;
+      color: #fff !important;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
+      padding: 6px !important;
+    }
+    .leaflet-control-layers-toggle {
+      width: 44px !important;
+      height: 44px !important;
+    }
+    .leaflet-control-layers-expanded {
+      padding: 8px !important;
+    }
+    .leaflet-control-layers-list {
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    .leaflet-control-layers label {
+      display: flex !important;
+      align-items: center !important;
+      padding: 10px 12px !important;
+      margin: 2px 0 !important;
+      cursor: pointer !important;
+      border-radius: 8px !important;
+      transition: background 0.2s !important;
+    }
+    .leaflet-control-layers label:hover {
+      background: rgba(255, 255, 255, 0.1) !important;
+    }
+    .leaflet-control-layers input[type="radio"] {
+      margin: 0 12px 0 0 !important;
+      accent-color: #64b5f6 !important;
+      width: 18px !important;
+      height: 18px !important;
+      cursor: pointer !important;
+    }
+    .leaflet-control-layers span {
+      font-family: var(--paper-font-body1_-_font-family, 'Roboto', sans-serif) !important;
+      font-size: 14px !important;
+      line-height: 1 !important;
+    }
+    .leaflet-control-layers-separator {
+      display: none !important;
+    }
+
+    .leaflet-bar a {
+      background-color: #f7f7f7 !important;
+      color: #222324 !important;
+    }
+    .leaflet-bar a:hover {
+      background-color: #e6e6e6 !important;
+      color: #000 !important;
+    }
+    .leaflet-bar a.leaflet-disabled,
+    .leaflet-bar a.leaflet-disabled:hover {
+      background-color: #f7f7f7 !important;
+      color: #bbb !important;
+      cursor: default !important;
+    }
   `];
 
   public setConfig(config: any): void {
@@ -288,6 +357,18 @@ export class RouteTrackerCard extends LitElement {
 
   protected updated(changedProps: PropertyValues): void {
     super.updated(changedProps);
+
+    if (changedProps.has('hass') || changedProps.has('config')) {
+      const newIsDark = this.isDarkMode;
+      if (this._lastIsDark !== newIsDark) {
+        this._lastIsDark = newIsDark;
+        this.updateMapThemeClass();
+        if (this._lastPoints && this._lastPoints.length > 0) {
+          this.drawRoute(this._lastPoints);
+        }
+      }
+    }
+
     if (changedProps.has('selectedDevice') || changedProps.has('selectedDate')) {
       if (this.selectedDevice && this.selectedDate) {
         setTimeout(() => {
@@ -402,23 +483,47 @@ export class RouteTrackerCard extends LitElement {
     const lon = this.hass.config.longitude || 30.0;
 
     this.map = L.map(mapContainer).setView([lat, lon], 13);
-    L.tileLayer('https://tile.openstreetmap.de/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      maxZoom: 19
-    }).addTo(this.map);
+
+    const baseMaps: Record<string, L.TileLayer> = {
+      'OpenStreetMap DE': L.tileLayer('https://tile.openstreetmap.de/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+      }),
+      'CartoDB Voyager': L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        maxZoom: 19
+      }),
+      'Esri Satellite': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri',
+        maxZoom: 19
+      })
+    };
+
+    const providerKey = this.config?.map_provider || 'osm_default';
+    let defaultLayer = baseMaps['OpenStreetMap DE'];
+
+    if (providerKey === 'carto_voyager') defaultLayer = baseMaps['CartoDB Voyager'];
+    if (providerKey === 'esri_satellite') {
+      defaultLayer = baseMaps['Esri Satellite'];
+      this._isSatellite = true;
+    }
+
+    defaultLayer.addTo(this.map);
+    L.control.layers(baseMaps, undefined, { position: 'bottomleft' }).addTo(this.map);
+
+    this.map.on('baselayerchange', (e: any) => {
+      this._isSatellite = (e.name === 'Esri Satellite');
+      this.updateMapThemeClass();
+      if (this._lastPoints && this._lastPoints.length > 0) {
+        this.drawRoute(this._lastPoints);
+      }
+    });
 
     this.routeLayer = L.layerGroup().addTo(this.map);
     this.zoneLayer = L.layerGroup().addTo(this.map);
 
-    const themeMode = this.config?.theme_mode || 'auto';
-    const isDark = themeMode === 'dark' ||
-      (themeMode === 'auto' && (this.hass.themes as any).darkMode);
-
-    if (isDark) {
-      mapContainer.classList.add('dark-mode');
-    } else {
-      mapContainer.classList.remove('dark-mode');
-    }
+    this._lastIsDark = this.isDarkMode;
+    this.updateMapThemeClass();
 
     const ResetControl = L.Control.extend({
       options: { position: 'topleft' },
@@ -431,7 +536,7 @@ export class RouteTrackerCard extends LitElement {
         link.style.justifyContent = 'center';
         link.style.alignItems = 'center';
         link.style.cursor = 'pointer';
-        link.innerHTML = '<svg style="width:18px;height:18px;" viewBox="0 0 24 24"><path fill="currentColor" d="M12 9A3 3 0 0 0 9 12A3 3 0 0 0 12 15A3 3 0 0 0 15 12A3 3 0 0 0 12 9M19 19H15V21H19A2 2 0 0 0 21 19V15H19M19 3H15V5H19V9H21V5A2 2 0 0 0 19 3M5 5H9V3H5A2 2 0 0 0 3 5V9H5M5 15H3V19A2 2 0 0 0 5 21H9V19H5V15Z"/></svg>';
+        link.innerHTML = '<svg style="width:20px;height:20px;" viewBox="0 0 24 24"><path fill="currentColor" d="M12 9A3 3 0 0 0 9 12A3 3 0 0 0 12 15A3 3 0 0 0 15 12A3 3 0 0 0 12 9M19 19H15V21H19A2 2 0 0 0 21 19V15H19M19 3H15V5H19V9H21V5A2 2 0 0 0 19 3M5 5H9V3H5A2 2 0 0 0 3 5V9H5M5 15H3V19A2 2 0 0 0 5 21H9V19H5V15Z"/></svg>';
 
         link.onclick = (e) => {
           e.preventDefault();
@@ -442,11 +547,48 @@ export class RouteTrackerCard extends LitElement {
         };
 
         L.DomEvent.disableClickPropagation(container);
-
         return container;
       }
     });
     this.map.addControl(new ResetControl());
+
+    const ThemeControl = L.Control.extend({
+      options: { position: 'topleft' },
+      onAdd: () => {
+        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+        const link = L.DomUtil.create('a', '', container);
+        link.href = '#';
+        link.title = 'Toggle Theme';
+        link.style.display = 'flex';
+        link.style.justifyContent = 'center';
+        link.style.alignItems = 'center';
+        link.style.cursor = 'pointer';
+
+        const updateIcon = () => {
+          if (this._isSatellite) {
+            container.style.display = 'none';
+          } else {
+            container.style.display = 'block';
+            link.innerHTML = this.isDarkMode 
+            ? '<svg style="width:20px;height:20px;" viewBox="0 0 24 24"><path fill="currentColor" transform="translate(2.5, 0)" d="M9.37,5.51C9.19,6.15 9.1,6.82 9.1,7.5C9.1,10.81 11.79,13.5 15.1,13.5C15.78,13.5 16.45,13.41 17.09,13.23C16.8,17.08 13.58,20 9.6,20C5.4,20 2,16.6 2,12.4C2,8.42 4.92,5.2 8.77,4.91C8.95,5.1 9.15,5.3 9.37,5.51Z"/></svg>' 
+            : '<svg style="width:20px;height:20px;" viewBox="0 0 24 24"><path fill="currentColor" d="M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,2L14.39,5.42C13.65,5.15 12.84,5 12,5C11.16,5 10.35,5.15 9.61,5.42L12,2M3.34,7L7.5,6.65C6.9,7.16 6.36,7.78 5.94,8.5C5.5,9.24 5.25,10 5.11,10.79L3.34,7M3.36,17L5.12,13.23C5.26,14 5.53,14.78 5.95,15.5C6.37,16.24 6.91,16.86 7.5,17.37L3.36,17M20.65,7L18.88,10.79C18.74,10 18.47,9.23 18.05,8.5C17.63,7.78 17.1,7.15 16.5,6.64L20.65,7M20.64,17L16.5,17.36C17.09,16.85 17.62,16.22 18.04,15.5C18.46,14.77 18.73,14 18.87,13.21L20.64,17M12,22L9.59,18.56C10.33,18.83 11.14,19 12,19C12.82,19 13.63,18.83 14.37,18.56L12,22Z"/></svg>';
+          }
+        };
+        updateIcon();
+        (container as any).updateThemeIcon = updateIcon;
+
+        link.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (this._isSatellite) return;
+          this.toggleManualTheme();
+        };
+
+        L.DomEvent.disableClickPropagation(container);
+        return container;
+      }
+    });
+    this.map.addControl(new ThemeControl());
   }
 
   private drawZones(): void {
@@ -608,6 +750,7 @@ export class RouteTrackerCard extends LitElement {
   }
 
   private drawRoute(points: RoutePoint[]) {
+    this._lastPoints = points;
     if (!this.map || !this.routeLayer) return;
     this.routeLayer.clearLayers();
 
@@ -618,9 +761,7 @@ export class RouteTrackerCard extends LitElement {
       return;
     }
 
-    const themeMode = this.config?.theme_mode || 'auto';
-    const isDark = themeMode === 'dark' ||
-      (themeMode === 'auto' && (this.hass.themes as any).darkMode);
+    const isDark = this.isDarkMode && !this._isSatellite;
 
     const routeColor = isDark ? '#167A87' : '#00CCE6';
     const routeOpacity = isDark ? 0.9 : 0.6;
@@ -712,6 +853,38 @@ export class RouteTrackerCard extends LitElement {
 
   private closeControls(): void {
     this.controlsOpen = false;
+  }
+
+  private get isDarkMode(): boolean {
+    if (this._manualTheme !== undefined) return this._manualTheme === 'dark';
+    const themeMode = this.config?.theme_mode || 'auto';
+    if (themeMode === 'dark') return true;
+    if (themeMode === 'light') return false;
+    return (this.hass.themes as any).darkMode;
+  }
+
+  private updateMapThemeClass(): void {
+    if (this.mapContainer) {
+      if (this.isDarkMode && !this._isSatellite) {
+        this.mapContainer.classList.add('dark-mode');
+      } else {
+        this.mapContainer.classList.remove('dark-mode');
+      }
+      const controls = this.mapContainer.querySelectorAll('.leaflet-control');
+      controls.forEach((c: any) => {
+        if (typeof c.updateThemeIcon === 'function') {
+          c.updateThemeIcon();
+        }
+      });
+    }
+  }
+
+  private toggleManualTheme(): void {
+    this._manualTheme = this.isDarkMode ? 'light' : 'dark';
+    this.updateMapThemeClass();
+    if (this._lastPoints && this._lastPoints.length > 0) {
+      this.drawRoute(this._lastPoints);
+    }
   }
 
   render() {

@@ -23,5 +23,6 @@ export const de = {
   'editor.theme_mode': 'Kartenthema',
   'editor.theme_auto': 'Auto (Systemeinstellung)',
   'editor.theme_light': 'Hell',
-  'editor.theme_dark': 'Dunkel'
+  'editor.theme_dark': 'Dunkel',
+  "editor.map_provider": "Kartenanbieter",
 };
