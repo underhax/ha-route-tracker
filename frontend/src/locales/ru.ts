@@ -8,6 +8,8 @@ export const ru = {
   'editor.unsupported_tracker': 'Этот device_tracker не настроен в Route Tracker.',
   'editor.unsupported_entity': 'Поддерживаются только персоны и device_tracker, настроенные в Route Tracker.',
   'card.map_control': 'Управление картой',
+  'card.open_controls': 'Открыть управление картой',
+  'card.close_controls': 'Закрыть управление картой',
   'card.device': 'Устройство:',
   'card.date': 'Дата:',
   'card.current_location': '<b>Текущее положение</b><br>Или последняя известная точка',

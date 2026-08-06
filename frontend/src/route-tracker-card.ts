@@ -82,8 +82,12 @@ export class RouteTrackerCard extends LitElement {
   @state() private selectedDevice: string = '';
   @state() private selectedDate: string = getLocalDateString(new Date());
   @state() private devices: { entity_id: string; name: string }[] = [];
+  @state() private controlsOpen: boolean = false;
 
   private map?: L.Map;
+  private mapContainer?: HTMLElement;
+  private mapResizeFrame?: number;
+  private resizeObserver?: ResizeObserver;
   private routeLayer?: L.LayerGroup;
   private zoneLayer?: L.LayerGroup;
   private routeBounds: any = null;
@@ -97,13 +101,15 @@ export class RouteTrackerCard extends LitElement {
       width: 100%;
       height: 100%;
       min-height: 400px;
+      aspect-ratio: 16 / 9;
+      container-type: inline-size;
       border-radius: var(--ha-card-border-radius, 12px);
       overflow: hidden;
       box-shadow: var(--ha-card-box-shadow, 0px 2px 4px 0px rgba(0,0,0,0.16));
     }
     #map {
-      width: 100%;
-      height: 100%;
+      position: absolute;
+      inset: 0;
       z-index: 1;
     }
     #map.dark-mode {
@@ -118,22 +124,79 @@ export class RouteTrackerCard extends LitElement {
       top: 16px;
       right: 16px;
       z-index: 1000;
+      box-sizing: border-box;
+      width: 284px;
       background: rgba(32, 33, 36, 0.9);
       backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 12px;
       padding: 16px;
       color: #fff;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      width: 250px;
       font-family: var(--paper-font-body1_-_font-family, 'Roboto', sans-serif);
     }
+    .control-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
     .control-panel h3 {
-      margin: 0 0 16px 0;
+      margin: 0;
       font-size: 14px;
       text-transform: uppercase;
       letter-spacing: 1px;
       color: #64b5f6;
+    }
+    .control-panel-close,
+    .controls-toggle {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-radius: 8px;
+      color: #fff;
+      cursor: pointer;
+      font: inherit;
+    }
+    .control-panel-close {
+      width: 32px;
+      height: 32px;
+      margin: -4px -4px -4px 8px;
+      background: transparent;
+      font-size: 28px;
+      line-height: 1;
+    }
+    .controls-toggle {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      z-index: 1000;
+      width: 44px;
+      height: 44px;
+      background: rgba(32, 33, 36, 0.9);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      font-size: 24px;
+    }
+    .control-panel-close:focus-visible,
+    .controls-toggle:focus-visible {
+      outline: 2px solid #64b5f6;
+      outline-offset: 2px;
+    }
+    @container (max-width: 640px) {
+      .controls-toggle {
+        display: flex;
+      }
+      .control-panel {
+        display: none;
+        width: min(284px, calc(100% - 32px));
+      }
+      .control-panel.is-open {
+        display: block;
+      }
+      .control-panel-close {
+        display: flex;
+      }
     }
     .input-group {
       display: flex;
@@ -167,6 +230,21 @@ export class RouteTrackerCard extends LitElement {
     this.config = config;
   }
 
+  public connectedCallback(): void {
+    super.connectedCallback();
+    this.startObservingMapSize();
+  }
+
+  public disconnectedCallback(): void {
+    this.resizeObserver?.disconnect();
+    this.resizeObserver = undefined;
+    if (this.mapResizeFrame !== undefined) {
+      cancelAnimationFrame(this.mapResizeFrame);
+      this.mapResizeFrame = undefined;
+    }
+    super.disconnectedCallback();
+  }
+
   protected firstUpdated(): void {
     this.initMap();
     this.loadDevices();
@@ -183,6 +261,24 @@ export class RouteTrackerCard extends LitElement {
         }, 100);
       }
     }
+  }
+
+  private startObservingMapSize(): void {
+    if (!this.mapContainer || this.resizeObserver) {
+      return;
+    }
+
+    this.resizeObserver = new ResizeObserver(() => {
+      if (this.mapResizeFrame !== undefined) {
+        return;
+      }
+
+      this.mapResizeFrame = requestAnimationFrame(() => {
+        this.mapResizeFrame = undefined;
+        this.map?.invalidateSize();
+      });
+    });
+    this.resizeObserver.observe(this.mapContainer);
   }
 
   private displayName(entityId: string, configuredName?: string): string {
@@ -216,8 +312,13 @@ export class RouteTrackerCard extends LitElement {
   }
 
   private initMap(): void {
-    const mapContainer = this.shadowRoot?.getElementById('map') as HTMLElement;
-    if (!mapContainer) return;
+    const mapContainer = this.shadowRoot?.getElementById('map');
+    if (!(mapContainer instanceof HTMLElement)) {
+      return;
+    }
+
+    this.mapContainer = mapContainer;
+    this.startObservingMapSize();
 
     const lat = this.hass.config.latitude || 50.0;
     const lon = this.hass.config.longitude || 30.0;
@@ -424,8 +525,7 @@ export class RouteTrackerCard extends LitElement {
       }
 
       this.drawRoute(points);
-    } catch (err) {
-      console.error('Failed to fetch route history', err);
+    } catch {
     }
   }
 
@@ -528,14 +628,47 @@ export class RouteTrackerCard extends LitElement {
     this.selectedDate = (e.target as HTMLInputElement).value;
   }
 
+  private openControls(): void {
+    this.controlsOpen = true;
+  }
+
+  private closeControls(): void {
+    this.controlsOpen = false;
+  }
+
   render() {
     const lang = this.hass?.language || 'en';
-
+    const controlPanelClass = this.controlsOpen
+      ? 'control-panel is-open'
+      : 'control-panel';
 
     return html`
       <div id="map"></div>
-      <div class="control-panel">
-        <h3>${localize('card.map_control', lang)}</h3>
+      ${this.controlsOpen
+        ? ''
+        : html`
+            <button
+              class="controls-toggle"
+              type="button"
+              aria-label=${localize('card.open_controls', lang)}
+              aria-expanded="false"
+              @click=${this.openControls}
+            >
+              ☰
+            </button>
+          `}
+      <div class=${controlPanelClass}>
+        <div class="control-panel-header">
+          <h3>${localize('card.map_control', lang)}</h3>
+          <button
+            class="control-panel-close"
+            type="button"
+            aria-label=${localize('card.close_controls', lang)}
+            @click=${this.closeControls}
+          >
+            ×
+          </button>
+        </div>
 
         <div class="input-group">
           <label>${localize('card.device', lang)}</label>

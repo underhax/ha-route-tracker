@@ -8,6 +8,8 @@ export const uk = {
   'editor.unsupported_tracker': 'Цей device_tracker не налаштований у Route Tracker.',
   'editor.unsupported_entity': 'Підтримуються лише особи та device_tracker, налаштовані в Route Tracker.',
   'card.map_control': 'Керування картою',
+  'card.open_controls': 'Відкрити керування картою',
+  'card.close_controls': 'Закрити керування картою',
   'card.device': 'Пристрій:',
   'card.date': 'Дата:',
   'card.current_location': '<b>Поточне розташування</b><br>Або остання відома точка',

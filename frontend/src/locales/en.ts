@@ -8,6 +8,8 @@ export const en = {
   'editor.unsupported_tracker': 'This device tracker is not configured in Route Tracker.',
   'editor.unsupported_entity': 'Only persons and device trackers configured in Route Tracker are supported.',
   'card.map_control': 'Map Control',
+  'card.open_controls': 'Open map controls',
+  'card.close_controls': 'Close map controls',
   'card.device': 'Device:',
   'card.date': 'Date:',
   'card.current_location': '<b>Current Location</b><br>Or last known point',
