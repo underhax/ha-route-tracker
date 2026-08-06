@@ -1,7 +1,6 @@
 from collections.abc import Awaitable, Callable
 from types import MappingProxyType
 from typing import cast
-from unittest.mock import AsyncMock, patch
 
 import pytest
 import voluptuous as vol
@@ -87,10 +86,8 @@ async def test_options_flow_collects_device_trackers_and_friendly_names(
         subentries_data=None,
         unique_id=None,
     )
-    with patch.object(hass, "http") as http:
-        http.async_register_static_paths = AsyncMock()
-        await hass.config_entries.async_add(entry)
-        await hass.async_block_till_done()
+    await hass.config_entries.async_add(entry)
+    await hass.async_block_till_done()
 
     result = await hass.config_entries.options.async_init(entry.entry_id)
 

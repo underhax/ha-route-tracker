@@ -1,27 +1,42 @@
 """The Route Tracker integration."""
 
-from homeassistant.components.http import StaticPathConfig
+from aiohttp import web
+from aiohttp.hdrs import CACHE_CONTROL
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.http import KEY_ALLOW_CONFIGURED_CORS
+from typing_extensions import override
 
 from .const import DOMAIN, LOGGER
 
 PLATFORMS = ["sensor"]
+FRONTEND_CACHE_CONTROL = "no-cache, max-age=0, must-revalidate"
+
+
+class RouteTrackerStaticResource(web.StaticResource):
+    """Require validation so rebuilt frontend assets are never served stale."""
+
+    @override
+    async def _handle(self, request: web.Request) -> web.StreamResponse:
+        response = await super()._handle(request)
+        response.headers[CACHE_CONTROL] = FRONTEND_CACHE_CONTROL
+        return response
+
+
+def _register_static_path(hass: HomeAssistant) -> None:
+    """Serve the frontend with revalidation while preserving static path safety."""
+    resource = RouteTrackerStaticResource(
+        f"/{DOMAIN}",
+        hass.config.path(f"custom_components/{DOMAIN}/www"),
+    )
+    hass.http.app.router.register_resource(resource)
+    hass.http.app[KEY_ALLOW_CONFIGURED_CORS](resource)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Route Tracker from a config entry."""
     hass.data.setdefault(DOMAIN, {})
-
-    await hass.http.async_register_static_paths(
-        [
-            StaticPathConfig(
-                url_path=f"/{DOMAIN}",
-                path=hass.config.path(f"custom_components/{DOMAIN}/www"),
-                cache_headers=False,
-            )
-        ]
-    )
+    _register_static_path(hass)
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
