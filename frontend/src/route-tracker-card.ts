@@ -79,12 +79,17 @@ export class RouteTrackerCard extends LitElement {
     return { type: 'custom:route-tracker-card' };
   }
 
+  public getCardSize(): number {
+    return 8;
+  }
+
   @state() private selectedDevice: string = '';
   @state() private selectedDate: string = getLocalDateString(new Date());
   @state() private devices: { entity_id: string; name: string }[] = [];
   @state() private controlsOpen: boolean = false;
 
   private map?: L.Map;
+  private editModeObserver?: MutationObserver;
   private mapContainer?: HTMLElement;
   private mapResizeFrame?: number;
   private resizeObserver?: ResizeObserver;
@@ -96,16 +101,38 @@ export class RouteTrackerCard extends LitElement {
     unsafeCSS(leafletCss),
     css`
     :host {
+      --route-tracker-header-height: 56px;
+      --route-tracker-edit-header-height: 114px;
+      --route-tracker-edit-panel-height: 65px;
+      --route-tracker-standard-available-height: calc(
+        100dvh - var(--route-tracker-header-height)
+      );
+      --route-tracker-edit-available-height: calc(
+        100dvh
+        - var(--route-tracker-edit-header-height)
+        - var(--route-tracker-edit-panel-height)
+      );
+
       display: block;
       position: relative;
       width: 100%;
+      min-width: 0;
       height: 100%;
       min-height: 400px;
+      max-height: var(--route-tracker-standard-available-height);
       aspect-ratio: 16 / 9;
-      container-type: inline-size;
       border-radius: var(--ha-card-border-radius, 12px);
       overflow: hidden;
       box-shadow: var(--ha-card-box-shadow, 0px 2px 4px 0px rgba(0,0,0,0.16));
+    }
+    :host(.is-editing-panel) {
+      min-height: 0;
+      max-height: var(--route-tracker-edit-available-height);
+    }
+    .card-content {
+      position: absolute;
+      inset: 0;
+      container-type: inline-size;
     }
     #map {
       position: absolute;
@@ -123,7 +150,7 @@ export class RouteTrackerCard extends LitElement {
       position: absolute;
       top: 16px;
       right: 16px;
-      z-index: 1000;
+      z-index: 3;
       box-sizing: border-box;
       width: 284px;
       background: rgba(32, 33, 36, 0.9);
@@ -171,7 +198,7 @@ export class RouteTrackerCard extends LitElement {
       position: absolute;
       top: 16px;
       right: 16px;
-      z-index: 1000;
+      z-index: 3;
       width: 44px;
       height: 44px;
       background: rgba(32, 33, 36, 0.9);
@@ -232,10 +259,13 @@ export class RouteTrackerCard extends LitElement {
 
   public connectedCallback(): void {
     super.connectedCallback();
+    this.updatePanelEditModeClass();
     this.startObservingMapSize();
   }
 
   public disconnectedCallback(): void {
+    this.editModeObserver?.disconnect();
+    this.editModeObserver = undefined;
     this.resizeObserver?.disconnect();
     this.resizeObserver = undefined;
     if (this.mapResizeFrame !== undefined) {
@@ -246,6 +276,8 @@ export class RouteTrackerCard extends LitElement {
   }
 
   protected firstUpdated(): void {
+    this.updatePanelEditModeClass();
+    this.startObservingPanelEditMode();
     this.initMap();
     this.loadDevices();
     this.drawZones();
@@ -263,12 +295,54 @@ export class RouteTrackerCard extends LitElement {
     }
   }
 
+  private getComposedAncestors(): Element[] {
+    const ancestors: Element[] = [];
+    let currentElement: Element | null = this;
+
+    while (currentElement) {
+      ancestors.push(currentElement);
+      const root = currentElement.getRootNode();
+      currentElement = currentElement.parentElement ?? (
+        root instanceof ShadowRoot ? root.host : null
+      );
+    }
+
+    return ancestors;
+  }
+
+  private updatePanelEditModeClass(): void {
+    const ancestors = this.getComposedAncestors();
+    const isEditMode = ancestors.some(element =>
+      element.classList.contains('edit-mode')
+    );
+    const isPanel = ancestors.some(element =>
+      element.matches('hui-card-options.panel')
+    );
+
+    this.classList.toggle('is-editing-panel', isEditMode && isPanel);
+  }
+
+  private startObservingPanelEditMode(): void {
+    this.editModeObserver?.disconnect();
+    this.editModeObserver = new MutationObserver(() => {
+      this.updatePanelEditModeClass();
+    });
+
+    for (const ancestor of this.getComposedAncestors()) {
+      this.editModeObserver.observe(ancestor, {
+        attributes: true,
+        attributeFilter: ['class'],
+      });
+    }
+  }
+
   private startObservingMapSize(): void {
     if (!this.mapContainer || this.resizeObserver) {
       return;
     }
 
     this.resizeObserver = new ResizeObserver(() => {
+      this.updatePanelEditModeClass();
       if (this.mapResizeFrame !== undefined) {
         return;
       }
@@ -643,49 +717,50 @@ export class RouteTrackerCard extends LitElement {
       : 'control-panel';
 
     return html`
-      <div id="map"></div>
-      ${this.controlsOpen
-        ? ''
-        : html`
+      <div class="card-content">
+        <div id="map"></div>
+        ${this.controlsOpen
+          ? ''
+          : html`
+              <button
+                class="controls-toggle"
+                type="button"
+                aria-label=${localize('card.open_controls', lang)}
+                aria-expanded="false"
+                @click=${this.openControls}
+              >
+                ☰
+              </button>
+            `}
+        <div class=${controlPanelClass}>
+          <div class="control-panel-header">
+            <h3>${localize('card.map_control', lang)}</h3>
             <button
-              class="controls-toggle"
+              class="control-panel-close"
               type="button"
-              aria-label=${localize('card.open_controls', lang)}
-              aria-expanded="false"
-              @click=${this.openControls}
+              aria-label=${localize('card.close_controls', lang)}
+              @click=${this.closeControls}
             >
-              ☰
+              ×
             </button>
-          `}
-      <div class=${controlPanelClass}>
-        <div class="control-panel-header">
-          <h3>${localize('card.map_control', lang)}</h3>
-          <button
-            class="control-panel-close"
-            type="button"
-            aria-label=${localize('card.close_controls', lang)}
-            @click=${this.closeControls}
-          >
-            ×
-          </button>
-        </div>
+          </div>
 
-        <div class="input-group">
-          <label>${localize('card.device', lang)}</label>
-          <select @change=${this.handleDeviceChange} .value=${this.selectedDevice}>
-            ${this.devices.map(d => html`<option value=${d.entity_id}>${d.name}</option>`)}
-          </select>
-        </div>
+          <div class="input-group">
+            <label>${localize('card.device', lang)}</label>
+            <select @change=${this.handleDeviceChange} .value=${this.selectedDevice}>
+              ${this.devices.map(d => html`<option value=${d.entity_id}>${d.name}</option>`)}
+            </select>
+          </div>
 
-        <div class="input-group">
-          <label>${localize('card.date', lang)}</label>
-          <input
-            type="date"
-            .value=${this.selectedDate}
-            @change=${this.handleDateChange}
-
-            max=${getLocalDateString(new Date(), this.hass)}
-          />
+          <div class="input-group">
+            <label>${localize('card.date', lang)}</label>
+            <input
+              type="date"
+              .value=${this.selectedDate}
+              @change=${this.handleDateChange}
+              max=${getLocalDateString(new Date(), this.hass)}
+            />
+          </div>
         </div>
       </div>
     `;
