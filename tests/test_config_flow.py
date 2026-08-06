@@ -1,6 +1,7 @@
 from collections.abc import Awaitable, Callable
 from types import MappingProxyType
 from typing import cast
+from unittest.mock import PropertyMock, patch
 
 import pytest
 import voluptuous as vol
@@ -133,6 +134,43 @@ async def test_options_flow_collects_device_trackers_and_friendly_names(
     }
 
 
+async def test_options_flow_handles_invalid_input() -> None:
+    """Ensure invalid entities are rejected and the form is shown again with an error."""
+    from custom_components.route_tracker.config_flow import (
+        RouteTrackerOptionsFlowHandler,
+    )
+
+    handler = RouteTrackerOptionsFlowHandler()
+    entry = config_entries.ConfigEntry(
+        version=1,
+        minor_version=1,
+        domain=DOMAIN,
+        title="",
+        data={},
+        source="",
+        options={},
+        discovery_keys=MappingProxyType({}),
+        subentries_data=None,
+        unique_id=None,
+    )
+
+    with patch(
+        "custom_components.route_tracker.config_flow.RouteTrackerOptionsFlowHandler.config_entry",
+        new_callable=PropertyMock,
+        return_value=entry,
+    ):
+        result = await handler.async_step_init(
+            user_input={
+                CONF_TRACKED_ENTITIES: "not_a_list",
+                "minimal_distance": 0.1,
+            }
+        )
+
+    assert result.get("type") == FlowResultType.FORM
+    assert result.get("step_id") == "init"
+    assert result.get("errors") == {"base": "unknown"}
+
+
 @pytest.mark.parametrize(
     ("value", "expected"),
     [
@@ -140,6 +178,7 @@ async def test_options_flow_collects_device_trackers_and_friendly_names(
         (["device_tracker.phone"], ["device_tracker.phone"]),
         (["person.alex"], None),
         (["device_tracker.phone", "person.alex"], None),
+        ("not_a_list", None),
     ],
 )
 def test_only_device_trackers_are_valid_tracking_sources(
@@ -152,6 +191,13 @@ def test_only_device_trackers_are_valid_tracking_sources(
         return
 
     assert validate_device_tracker_entity_ids(value) == expected
+
+
+def test_device_tracker_entity_ids_returns_empty_list_for_invalid_input() -> None:
+    """Ensure non-list inputs are rejected safely."""
+    from custom_components.route_tracker.config_flow import device_tracker_entity_ids
+
+    assert device_tracker_entity_ids("not_a_list") == []
 
 
 @pytest.mark.parametrize(

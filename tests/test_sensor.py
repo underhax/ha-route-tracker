@@ -77,3 +77,109 @@ async def test_setup_creates_sensors_only_for_device_trackers(
     assert len(added_entities) == 1
     assert isinstance(added_entities[0], RouteTrackerSensor)
     assert added_entities[0].name == "Phone history"
+
+
+async def test_setup_with_invalid_options(hass: HomeAssistant) -> None:
+    """Ensure invalid options fall back gracefully."""
+    entry = ConfigEntry(
+        version=1,
+        minor_version=1,
+        domain=DOMAIN,
+        title="Route Tracker",
+        data={},
+        source=config_entries.SOURCE_USER,
+        options={
+            CONF_TRACKED_ENTITIES: "not_a_list",
+            CONF_TRACKER_FRIENDLY_NAMES: "not_a_dict",
+            "minimal_distance": "not_a_number",
+        },
+        discovery_keys=MappingProxyType({}),
+        subentries_data=None,
+        unique_id=None,
+    )
+    added_entities: list[Entity] = []
+
+    def add_entities(
+        new_entities: Iterable[Entity], update_before_add: bool = False
+    ) -> None:
+        assert update_before_add
+        added_entities.extend(new_entities)
+
+    await async_setup_entry(hass, entry, add_entities)
+
+    assert len(added_entities) == 0
+
+
+async def test_sensor_lifecycle_and_state_changes(hass: HomeAssistant) -> None:
+    """Test full lifecycle of the virtual sensor and its response to GPS updates."""
+    hass.states.async_set(
+        "device_tracker.phone", "home", {"latitude": 50.0, "longitude": 10.0}
+    )
+
+    sensor = RouteTrackerSensor(
+        hass,
+        "device_tracker.phone",
+        0.05,
+        "Phone",
+    )
+
+    await sensor.async_added_to_hass()
+
+    assert sensor.extra_state_attributes is not None
+    assert sensor.extra_state_attributes.get("latitude") == 50.0
+    assert sensor.extra_state_attributes.get("longitude") == 10.0
+    initial_state = sensor.native_value
+    assert initial_state is not None
+
+    hass.states.async_set(
+        "device_tracker.phone", "not_home", {"latitude": 50.0000, "longitude": 10.0}
+    )
+    await hass.async_block_till_done()
+
+    state_after_first_update = sensor.native_value
+    assert state_after_first_update != initial_state
+
+    hass.states.async_set(
+        "device_tracker.phone", "not_home", {"latitude": 50.0001, "longitude": 10.0}
+    )
+    await hass.async_block_till_done()
+
+    assert sensor.native_value == state_after_first_update
+
+    hass.states.async_set(
+        "device_tracker.phone", "not_home", {"latitude": 50.01, "longitude": 10.0}
+    )
+    await hass.async_block_till_done()
+
+    assert sensor.native_value != state_after_first_update
+    assert sensor.extra_state_attributes is not None
+    assert sensor.extra_state_attributes.get("latitude") == 50.01
+
+    hass.states.async_set(
+        "device_tracker.phone", "not_home", {"latitude": None, "longitude": 10.0}
+    )
+    await hass.async_block_till_done()
+
+    hass.states.async_set(
+        "device_tracker.phone", "not_home", {"latitude": "invalid", "longitude": 10.0}
+    )
+    await hass.async_block_till_done()
+
+    _ = hass.states.async_remove("device_tracker.phone")
+    await hass.async_block_till_done()
+
+    await sensor.async_will_remove_from_hass()
+
+    sensor_missing = RouteTrackerSensor(hass, "device_tracker.missing", 0.05, None)
+    await sensor_missing.async_added_to_hass()
+    assert sensor_missing.native_value is None
+
+    hass.states.async_set(
+        "device_tracker.bad", "home", {"latitude": "invalid", "longitude": 10.0}
+    )
+    sensor_bad = RouteTrackerSensor(hass, "device_tracker.bad", 0.05, None)
+    await sensor_bad.async_added_to_hass()
+    assert sensor_bad.native_value is None
+
+    await sensor_missing.async_will_remove_from_hass()
+    await sensor_bad.async_will_remove_from_hass()

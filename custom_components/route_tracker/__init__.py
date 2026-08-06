@@ -8,6 +8,7 @@ from homeassistant.helpers.http import KEY_ALLOW_CONFIGURED_CORS
 from typing_extensions import override
 
 from .const import DOMAIN, LOGGER
+from .lovelace import async_register_resource, async_unregister_resource
 
 PLATFORMS = ["sensor"]
 FRONTEND_CACHE_CONTROL = "no-cache, max-age=0, must-revalidate"
@@ -42,6 +43,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
+    _ = hass.async_create_task(async_register_resource(hass))
+
     LOGGER.info("Route Tracker initialized successfully")
     return True
 
@@ -54,3 +57,9 @@ async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> Non
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Handle removal of an entry."""
+    _ = entry
+    await async_unregister_resource(hass)

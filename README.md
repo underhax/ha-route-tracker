@@ -82,13 +82,16 @@ The integration threshold is applied before the virtual sensor is updated. It ac
 
 ### Add the resource
 
-After installation, add the card resource in Home Assistant:
+> [!NOTE]
+> Route Tracker automatically registers its Lovelace resource. Manual registration is only required if you manage your dashboards in YAML mode.
 
-1. Open **Settings** > **Dashboards** > **Resources**.
-2. Add the following resource as a **JavaScript Module**:
+If using YAML mode, add the following to your `configuration.yaml`:
 
-```text
-/route_tracker/route-tracker-card.js
+```yaml
+lovelace:
+  resources:
+    - url: /route_tracker/route-tracker-card.js
+      type: module
 ```
 
 ### Add and configure the card
