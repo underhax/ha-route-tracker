@@ -25,6 +25,7 @@ describe('tracker eligibility', () => {
       'sensor.virtual_device_tracker_phone'
     );
     expect(toVirtualSensorId('person.c')).toBe('sensor.virtual_device_tracker_c');
+    expect(toVirtualSensorId('invalid_entity_without_dot')).toBe('');
   });
 
   it('allows only trackers selected by the integration', () => {
@@ -54,6 +55,10 @@ describe('tracker eligibility', () => {
     expect(getSelectedTrackersForPerson(personState, states)).toEqual([
       'device_tracker.phone',
     ]);
+  });
+
+  it('returns empty array when person has no device_trackers attribute', () => {
+    expect(getSelectedTrackersForPerson({ attributes: {} }, states)).toEqual([]);
   });
 
   it('returns the same eligible set for the default card list', () => {

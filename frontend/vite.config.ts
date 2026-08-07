@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 
 import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
 import { compression } from 'vite-plugin-compression2';
@@ -22,6 +22,13 @@ export default defineConfig({
     },
     rollupOptions: {
       external: [],
+    },
+  },
+  test: {
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.ts'],
+      reporter: ['text'],
     },
   },
 });

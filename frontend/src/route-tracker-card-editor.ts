@@ -18,7 +18,7 @@ export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEd
     this._config = config;
   }
 
-  static styles = css`
+  static override styles = css`
     .card-config {
       display: flex;
       flex-direction: column;
@@ -270,7 +270,7 @@ export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEd
     `;
   }
 
-  render() {
+  protected override render() {
     if (!this.hass || !this._config) {
       return html``;
     }

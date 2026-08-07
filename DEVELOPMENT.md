@@ -35,6 +35,8 @@ source .venv/bin/activate
 | `make lint` | Runs the frontend TypeScript type check without writing output files. |
 | `make frontend-bundle-check` | Builds the frontend in a temporary directory without modifying `www/`. |
 | `make frontend-check` | Installs frontend dependencies, checks types and the dependency tree, audits all and production dependencies, and verifies a temporary production bundle. |
+| `make frontend-test` | Runs the frontend test suite using Vitest. |
+| `make frontend-coverage` | Runs the frontend test suite and generates a coverage report. |
 | `make check` | Checks Python formatting, Ruff diagnostics, mypy, and Basedpyright. |
 | `make test` | Runs the Python test suite. |
 | `make verify` | Runs frontend checks, Python checks, and tests. |

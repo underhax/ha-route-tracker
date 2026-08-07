@@ -27,6 +27,10 @@ frontend-test:
 	npm --prefix frontend ci --ignore-scripts
 	npm --prefix frontend test
 
+frontend-coverage:
+	npm --prefix frontend ci --ignore-scripts
+	npm --prefix frontend run coverage
+
 frontend-bundle-check:
 	output_dir=$$(mktemp -d); \
 	trap 'rm -rf "$$output_dir"' EXIT; \

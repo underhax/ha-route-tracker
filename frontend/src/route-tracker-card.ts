@@ -35,8 +35,8 @@ function isConfiguredRouteEntity(value: unknown): value is ConfiguredRouteEntity
   }
 
   const entity = value as Record<string, unknown>;
-  return typeof entity.entity === 'string' &&
-    (entity.name === undefined || typeof entity.name === 'string');
+  return typeof entity['entity'] === 'string' &&
+    (entity['name'] === undefined || typeof entity['name'] === 'string');
 }
 
 function getLocalDateString(date: Date, hass?: HomeAssistant): string {
@@ -93,15 +93,15 @@ export class RouteTrackerCard extends LitElement {
   private _lastIsDark: boolean | null = null;
 
   private map?: L.Map;
-  private editModeObserver?: MutationObserver;
+  private editModeObserver?: MutationObserver | undefined;
   private mapContainer?: HTMLElement;
-  private mapResizeFrame?: number;
-  private resizeObserver?: ResizeObserver;
+  private mapResizeFrame?: number | undefined;
+  private resizeObserver?: ResizeObserver | undefined;
   private routeLayer?: L.LayerGroup;
   private zoneLayer?: L.LayerGroup;
   private routeBounds: any = null;
 
-  static styles = [
+  static override styles = [
     unsafeCSS(leafletCss),
     cardLayoutStyles,
     mapFiltersStyles,
@@ -116,7 +116,7 @@ export class RouteTrackerCard extends LitElement {
     this.config = config;
   }
 
-  public connectedCallback(): void {
+  public override connectedCallback(): void {
     super.connectedCallback();
 
     requestAnimationFrame(() => {
@@ -127,7 +127,7 @@ export class RouteTrackerCard extends LitElement {
     this.startObservingMapSize();
   }
 
-  public disconnectedCallback(): void {
+  public override disconnectedCallback(): void {
     this.editModeObserver?.disconnect();
     this.editModeObserver = undefined;
     this.resizeObserver?.disconnect();
@@ -139,13 +139,13 @@ export class RouteTrackerCard extends LitElement {
     super.disconnectedCallback();
   }
 
-  protected firstUpdated(): void {
+  protected override firstUpdated(): void {
     this.initMap();
     this.loadDevices();
     this.drawZones();
   }
 
-  protected updated(changedProps: PropertyValues): void {
+  protected override updated(changedProps: PropertyValues): void {
     super.updated(changedProps);
 
     if (changedProps.has('hass') || changedProps.has('config')) {
@@ -307,7 +307,9 @@ export class RouteTrackerCard extends LitElement {
       this._isSatellite = true;
     }
 
-    defaultLayer.addTo(this.map);
+    if (defaultLayer) {
+      defaultLayer.addTo(this.map);
+    }
     const providerControl = L.control.layers(baseMaps, undefined, { position: 'bottomleft' }).addTo(this.map);
     const providerContainer = providerControl.getContainer();
     if (providerContainer && this.mapContainer && this.mapContainer.parentElement) {
@@ -367,9 +369,9 @@ export class RouteTrackerCard extends LitElement {
       const state = this.hass.states[z.entity_id];
       if (!state) return;
 
-      const lat = state.attributes?.latitude;
-      const lon = state.attributes?.longitude;
-      const radius = state.attributes?.radius || 100;
+      const lat = state.attributes?.['latitude'];
+      const lon = state.attributes?.['longitude'];
+      const radius = state.attributes?.['radius'] || 100;
       if (!lat || !lon) return;
 
       L.circle([lat, lon], {
@@ -408,8 +410,8 @@ export class RouteTrackerCard extends LitElement {
       const zoneId = `zone.${stateObj.state.toLowerCase()}`;
       const zoneObj = this.hass.states[zoneId];
       if (zoneObj && zoneObj.attributes && 'latitude' in zoneObj.attributes && 'longitude' in zoneObj.attributes) {
-        const lat = parseFloat(zoneObj.attributes.latitude);
-        const lon = parseFloat(zoneObj.attributes.longitude);
+        const lat = parseFloat(zoneObj.attributes['latitude']);
+        const lon = parseFloat(zoneObj.attributes['longitude']);
         if (!isNaN(lat) && !isNaN(lon)) {
           return [lat, lon];
         }
@@ -483,7 +485,7 @@ export class RouteTrackerCard extends LitElement {
 
       const currentState = this.hass.states[this.selectedDevice];
       const currentLoc = this.resolveLocation(currentState);
-      if (currentLoc) {
+      if (currentState && currentLoc) {
         const timeStr = new Date(currentState.last_updated).toLocaleString();
         if (!lastLoc) {
           points.push({ loc: L.latLng(currentLoc[0], currentLoc[1]), timestamp: timeStr });
@@ -576,7 +578,7 @@ export class RouteTrackerCard extends LitElement {
     }
   }
 
-  render() {
+  protected override render() {
     const lang = this.hass?.language || 'en';
     const controlPanelClass = this.controlsOpen
       ? 'control-panel is-open'

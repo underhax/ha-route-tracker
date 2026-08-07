@@ -31,7 +31,7 @@ export function getSelectedTrackersForPerson(
   personState: RouteTrackerEntityState | undefined,
   states: RouteTrackerStates
 ): string[] {
-  const deviceTrackers = personState?.attributes.device_trackers;
+  const deviceTrackers = personState?.attributes?.['device_trackers'];
 
   if (!Array.isArray(deviceTrackers)) {
     return [];

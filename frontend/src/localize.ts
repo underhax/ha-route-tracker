@@ -15,7 +15,8 @@ const translations: Record<string, Record<string, string>> = {
 };
 
 export function localize(key: string, language: string = 'en'): string {
-  const lang = language.split('-')[0];
-  const dictionary = translations[lang] || translations['en'];
-  return dictionary[key] || translations['en'][key] || key;
+  const lang = language.split('-')[0] || 'en';
+  const enDictionary = translations['en'] as Record<string, string>;
+  const dictionary = translations[lang] || enDictionary;
+  return dictionary[key] || enDictionary[key] || key;
 }
