@@ -25,4 +25,8 @@ export const uk = {
   'editor.theme_light': 'Світла',
   'editor.theme_dark': 'Темна',
   "editor.map_provider": "Провайдер карти",
+  'card.reset_view': 'Скинути вигляд',
+  'card.toggle_theme': 'Змінити тему',
+  'card.zoom_in': 'Збільшити',
+  'card.zoom_out': 'Зменшити',
 };

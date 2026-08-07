@@ -25,4 +25,8 @@ export const ru = {
   'editor.theme_light': 'Светлая',
   'editor.theme_dark': 'Тёмная',
   "editor.map_provider": "Провайдер карты",
+  'card.reset_view': 'Сбросить вид',
+  'card.toggle_theme': 'Сменить тему',
+  'card.zoom_in': 'Увеличить',
+  'card.zoom_out': 'Уменьшить',
 };

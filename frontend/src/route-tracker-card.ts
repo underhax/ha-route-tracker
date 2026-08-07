@@ -13,13 +13,6 @@ import {
   toVirtualSensorId,
 } from './tracker-eligibility';
 
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-});
-
 interface RoutePoint {
   loc: L.LatLng;
   timestamp: string;
@@ -88,6 +81,7 @@ export class RouteTrackerCard extends LitElement {
   @state() private devices: { entity_id: string; name: string }[] = [];
   @state() private controlsOpen: boolean = false;
   @state() private _isSatellite: boolean = false;
+  @state() private _currentProvider: string = 'OpenStreetMap DE';
   @state() private _manualTheme?: 'light' | 'dark';
   private _lastPoints: RoutePoint[] = [];
   private _lastIsDark: boolean | null = null;
@@ -146,11 +140,38 @@ export class RouteTrackerCard extends LitElement {
     #map.dark-mode {
       filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
     }
-    #map.dark-mode .leaflet-control-attribution,
-    #map.dark-mode .zone-label,
-    #map.dark-mode .leaflet-control-layers,
+    #map.dark-mode.carto-provider {
+      filter: invert(100%) hue-rotate(180deg) brightness(150%) contrast(90%);
+    }
+    #map.dark-mode.carto-provider .leaflet-overlay-pane,
+    #map.dark-mode.carto-provider .leaflet-marker-pane {
+      filter: contrast(111%) brightness(66.6%) hue-rotate(180deg) invert(100%);
+    }
     #map.dark-mode .leaflet-bar {
       filter: invert(100%) hue-rotate(180deg) brightness(105%) contrast(111%);
+    }
+
+    #map.dark-mode:not(.carto-provider) .zone-label {
+      filter: invert(100%) hue-rotate(180deg) brightness(105%) contrast(111%);
+    }
+
+    .attribution-outside {
+      position: absolute !important;
+      bottom: 0px !important;
+      right: 0px !important;
+      z-index: 3 !important;
+      background-color: rgb(247, 247, 247);
+      border-radius: 3px 0px;
+      font-size: 12px;
+    }
+    .attribution-outside a {
+      color: #3289ce;
+      font-size: 12px;
+    }
+
+    .control-panel, .provider-selector, .controls-toggle {
+      background-color: #333334 !important;
+      backdrop-filter: blur(10px) !important;
     }
     .control-panel {
       position: absolute;
@@ -159,8 +180,6 @@ export class RouteTrackerCard extends LitElement {
       z-index: 3;
       box-sizing: border-box;
       width: 284px;
-      background: rgba(32, 33, 36, 0.9);
-      backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 12px;
       padding: 16px;
@@ -207,9 +226,15 @@ export class RouteTrackerCard extends LitElement {
       z-index: 3;
       width: 44px;
       height: 44px;
-      background: rgba(32, 33, 36, 0.9);
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
       font-size: 24px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 0;
+      padding: 0;
     }
     .control-panel-close:focus-visible,
     .controls-toggle:focus-visible {
@@ -217,9 +242,6 @@ export class RouteTrackerCard extends LitElement {
       outline-offset: 2px;
     }
     @container (max-width: 640px) {
-      .controls-toggle {
-        display: flex;
-      }
       .control-panel {
         display: none;
         width: min(284px, calc(100% - 32px));
@@ -255,27 +277,37 @@ export class RouteTrackerCard extends LitElement {
       border-color: #64b5f6;
     }
 
-    .leaflet-control-layers {
-      background: rgba(32, 33, 36, 0.9) !important;
-      backdrop-filter: blur(10px);
+    .provider-selector {
+      position: absolute !important;
+      bottom: 16px !important;
+      left: 16px !important;
+      z-index: 3 !important;
       border: 1px solid rgba(255, 255, 255, 0.1) !important;
       border-radius: 12px !important;
       color: #fff !important;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
       padding: 6px !important;
     }
-    .leaflet-control-layers-toggle {
+    .provider-selector .leaflet-control-layers-toggle {
       width: 44px !important;
       height: 44px !important;
+      background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill='%23999999' d='M199.39 225.91 14.93 321.64c-20.055 10.407-19.864 39.165.324 49.301l185.59 93.211a122.9 122.9 0 0 0 110.312 0l185.586-93.21c20.192-10.141 20.383-38.895.328-49.301l-184.465-95.73a122.9 122.9 0 0 0-113.214 0'/%3E%3Cpath fill='%23cccccc' d='M199.39 119.86 14.93 215.593c-20.055 10.406-19.864 39.16.324 49.3l185.59 93.211a122.9 122.9 0 0 0 110.312 0l185.586-93.21c20.192-10.141 20.383-38.895.328-49.301l-184.465-95.73a122.9 122.9 0 0 0-113.214-.005'/%3E%3Cpath fill='%23b3b3b3' d='m311.156 358.105 130.188-65.386-128.739-66.809a122.89 122.89 0 0 0-113.21 0L70.656 292.72l130.188 65.386a122.9 122.9 0 0 0 110.312 0'/%3E%3Cpath fill='%23ffffff' d='m199.39 13.813-184.46 95.73c-20.055 10.41-19.864 39.164.324 49.305l185.59 93.21a122.9 122.9 0 0 0 110.312 0l185.586-93.21c20.192-10.141 20.383-38.895.328-49.305l-184.465-95.73a122.9 122.9 0 0 0-113.214 0'/%3E%3Cpath fill='%23e6e6e6' d='m311.156 252.059 130.188-65.387-128.739-66.813a122.89 122.89 0 0 0-113.21 0L70.656 186.672l130.188 65.387a122.9 122.9 0 0 0 110.312 0'/%3E%3Cpath fill='%23cccccc' d='m311.156 252.059 26.344-13.23-24.895-12.919a122.9 122.9 0 0 0-113.214 0L174.5 238.828l26.344 13.23a122.9 122.9 0 0 0 110.312 0'/%3E%3C/svg%3E") !important;
+      background-size: 26px 26px !important;
+      background-position: center !important;
+      background-repeat: no-repeat !important;
     }
-    .leaflet-control-layers-expanded {
+    .provider-selector.leaflet-control-layers-expanded {
       padding: 8px !important;
     }
-    .leaflet-control-layers-list {
+    .provider-selector .leaflet-control-layers-list,
+    .provider-selector .leaflet-control-layers-scrollbar {
       margin: 0 !important;
       padding: 0 !important;
+      height: auto !important;
+      max-height: none !important;
+      overflow: visible !important;
     }
-    .leaflet-control-layers label {
+    .provider-selector label {
       display: flex !important;
       align-items: center !important;
       padding: 10px 12px !important;
@@ -284,22 +316,22 @@ export class RouteTrackerCard extends LitElement {
       border-radius: 8px !important;
       transition: background 0.2s !important;
     }
-    .leaflet-control-layers label:hover {
+    .provider-selector label:hover {
       background: rgba(255, 255, 255, 0.1) !important;
     }
-    .leaflet-control-layers input[type="radio"] {
+    .provider-selector input[type="radio"] {
       margin: 0 12px 0 0 !important;
       accent-color: #64b5f6 !important;
       width: 18px !important;
       height: 18px !important;
       cursor: pointer !important;
     }
-    .leaflet-control-layers span {
+    .provider-selector span {
       font-family: var(--paper-font-body1_-_font-family, 'Roboto', sans-serif) !important;
       font-size: 14px !important;
       line-height: 1 !important;
     }
-    .leaflet-control-layers-separator {
+    .provider-selector .leaflet-control-layers-separator {
       display: none !important;
     }
 
@@ -481,37 +513,65 @@ export class RouteTrackerCard extends LitElement {
 
     const lat = this.hass.config.latitude || 50.0;
     const lon = this.hass.config.longitude || 30.0;
+    const currentLang = this.hass?.language || 'en';
 
-    this.map = L.map(mapContainer).setView([lat, lon], 13);
+    this.map = L.map(mapContainer, {
+      zoomControl: false
+    }).setView([lat, lon], 13);
+
+    L.control.zoom({
+      zoomInTitle: localize('card.zoom_in', currentLang),
+      zoomOutTitle: localize('card.zoom_out', currentLang)
+    }).addTo(this.map);
+
+    const attributionControl = this.map.attributionControl;
+    if (attributionControl) {
+      const attrContainer = attributionControl.getContainer();
+      if (attrContainer && mapContainer.parentElement) {
+        attrContainer.classList.add('attribution-outside');
+        mapContainer.parentElement.appendChild(attrContainer);
+      }
+    }
 
     const baseMaps: Record<string, L.TileLayer> = {
       'OpenStreetMap DE': L.tileLayer('https://tile.openstreetmap.de/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" rel="noopener noreferrer" target="_blank">OpenStreetMap</a> contributors',
         maxZoom: 19
       }),
       'CartoDB Voyager': L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" rel="noopener noreferrer" target="_blank">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions" rel="noopener noreferrer" target="_blank">CARTO</a>',
         maxZoom: 19
       }),
       'Esri Satellite': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri',
+        attribution: 'Tiles &copy; <a href="https://www.esri.com/" rel="noopener noreferrer" target="_blank">Esri</a>',
         maxZoom: 19
       })
     };
 
     const providerKey = this.config?.map_provider || 'osm_default';
     let defaultLayer = baseMaps['OpenStreetMap DE'];
+    this._currentProvider = 'OpenStreetMap DE';
 
-    if (providerKey === 'carto_voyager') defaultLayer = baseMaps['CartoDB Voyager'];
+    if (providerKey === 'carto_voyager') {
+      defaultLayer = baseMaps['CartoDB Voyager'];
+      this._currentProvider = 'CartoDB Voyager';
+    }
     if (providerKey === 'esri_satellite') {
       defaultLayer = baseMaps['Esri Satellite'];
+      this._currentProvider = 'Esri Satellite';
       this._isSatellite = true;
     }
 
     defaultLayer.addTo(this.map);
-    L.control.layers(baseMaps, undefined, { position: 'bottomleft' }).addTo(this.map);
+    const providerControl = L.control.layers(baseMaps, undefined, { position: 'bottomleft' }).addTo(this.map);
+    const providerContainer = providerControl.getContainer();
+    if (providerContainer && this.mapContainer && this.mapContainer.parentElement) {
+      providerContainer.classList.add('provider-selector');
+      this.mapContainer.parentElement.appendChild(providerContainer);
+    }
 
     this.map.on('baselayerchange', (e: any) => {
+      this._currentProvider = e.name;
       this._isSatellite = (e.name === 'Esri Satellite');
       this.updateMapThemeClass();
       if (this._lastPoints && this._lastPoints.length > 0) {
@@ -531,7 +591,7 @@ export class RouteTrackerCard extends LitElement {
         const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
         const link = L.DomUtil.create('a', '', container);
         link.href = '#';
-        link.title = 'Reset View';
+        link.title = localize('card.reset_view', currentLang);
         link.style.display = 'flex';
         link.style.justifyContent = 'center';
         link.style.alignItems = 'center';
@@ -558,7 +618,7 @@ export class RouteTrackerCard extends LitElement {
         const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
         const link = L.DomUtil.create('a', '', container);
         link.href = '#';
-        link.title = 'Toggle Theme';
+        link.title = localize('card.toggle_theme', currentLang);
         link.style.display = 'flex';
         link.style.justifyContent = 'center';
         link.style.alignItems = 'center';
@@ -569,9 +629,30 @@ export class RouteTrackerCard extends LitElement {
             container.style.display = 'none';
           } else {
             container.style.display = 'block';
-            link.innerHTML = this.isDarkMode 
-            ? '<svg style="width:20px;height:20px;" viewBox="0 0 24 24"><path fill="currentColor" transform="translate(2.5, 0)" d="M9.37,5.51C9.19,6.15 9.1,6.82 9.1,7.5C9.1,10.81 11.79,13.5 15.1,13.5C15.78,13.5 16.45,13.41 17.09,13.23C16.8,17.08 13.58,20 9.6,20C5.4,20 2,16.6 2,12.4C2,8.42 4.92,5.2 8.77,4.91C8.95,5.1 9.15,5.3 9.37,5.51Z"/></svg>' 
-            : '<svg style="width:20px;height:20px;" viewBox="0 0 24 24"><path fill="currentColor" d="M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,2L14.39,5.42C13.65,5.15 12.84,5 12,5C11.16,5 10.35,5.15 9.61,5.42L12,2M3.34,7L7.5,6.65C6.9,7.16 6.36,7.78 5.94,8.5C5.5,9.24 5.25,10 5.11,10.79L3.34,7M3.36,17L5.12,13.23C5.26,14 5.53,14.78 5.95,15.5C6.37,16.24 6.91,16.86 7.5,17.37L3.36,17M20.65,7L18.88,10.79C18.74,10 18.47,9.23 18.05,8.5C17.63,7.78 17.1,7.15 16.5,6.64L20.65,7M20.64,17L16.5,17.36C17.09,16.85 17.62,16.22 18.04,15.5C18.46,14.77 18.73,14 18.87,13.21L20.64,17M12,22L9.59,18.56C10.33,18.83 11.14,19 12,19C12.82,19 13.63,18.83 14.37,18.56L12,22Z"/></svg>';
+
+            const isDark = this.isDarkMode;
+            if (link.children.length === 0) {
+              link.innerHTML = `
+                <div style="position:relative; width:20px; height:20px; display:flex; justify-content:center; align-items:center;">
+                  <svg class="theme-moon" style="position:absolute; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1); width:20px; height:20px;" viewBox="-40 -40 393 393">
+                    <path fill="currentColor" d="M305.6 178.053c-3.2-.8-6.4 0-9.2 2-10.4 8.8-22.4 16-35.6 20.8-12.4 4.8-26 7.2-40.4 7.2-32.4 0-62-13.2-83.2-34.4s-34.4-50.8-34.4-83.2c0-13.6 2.4-26.8 6.4-38.8 4.4-12.8 10.8-24.4 19.2-34.4 3.6-4.4 2.8-10.8-1.6-14.4-2.8-2-6-2.8-9.2-2-34 9.2-63.6 29.6-84.8 56.8-20.4 26.8-32.8 60-32.8 96.4 0 43.6 17.6 83.2 46.4 112s68.4 46.4 112 46.4c36.8 0 70.8-12.8 98-34 27.6-21.6 47.6-52.4 56-87.6 2-6-1.2-11.6-6.8-12.8m-61.2 83.6c-23.2 18.4-52.8 29.6-85.2 29.6-38 0-72.4-15.6-97.2-40.4s-40.4-59.2-40.4-97.2c0-31.6 10.4-60.4 28.4-83.6 12.4-16 28-29.2 46-38.4-2 4.4-4 8.8-5.6 13.6-5.2 14.4-7.6 29.6-7.6 45.6 0 38 15.6 72.8 40.4 97.6s59.6 40.4 97.6 40.4c16.8 0 32.8-2.8 47.6-8.4 5.2-2 10.4-4 15.2-6.4-9.6 18.4-22.8 34.8-39.2 47.6"></path>
+                  </svg>
+                  <svg class="theme-sun" style="position:absolute; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1); width:20px; height:20px;" viewBox="0 0 302.4 302.4">
+                    <path fill="currentColor" d="M204.8 97.6C191.2 84 172 75.2 151.2 75.2s-40 8.4-53.6 22.4c-13.6 13.6-22.4 32.8-22.4 53.6s8.8 40 22.4 53.6 32.8 22.4 53.6 22.4 40-8.4 53.6-22.4c13.6-13.6 22.4-32.8 22.4-53.6s-8.4-40-22.4-53.6m-14.4 92.8c-10 10-24 16-39.2 16s-29.2-6-39.2-16-16-24-16-39.2 6-29.2 16-39.2 24-16 39.2-16 29.2 6 39.2 16 16 24 16 39.2-6 29.2-16 39.2M292 140.8h-30.8c-5.6 0-10.4 4.8-10.4 10.4s4.8 10.4 10.4 10.4H292c5.6 0 10.4-4.8 10.4-10.4s-4.8-10.4-10.4-10.4M151.2 250.8c-5.6 0-10.4 4.8-10.4 10.4V292c0 5.6 4.8 10.4 10.4 10.4s10.4-4.8 10.4-10.4v-30.8c0-5.6-4.8-10.4-10.4-10.4M258 243.6l-22-22c-3.6-4-10.4-4-14.4 0s-4 10.4 0 14.4l22 22c4 4 10.4 4 14.4 0s4-10.4 0-14.4M151.2 0c-5.6 0-10.4 4.8-10.4 10.4v30.8c0 5.6 4.8 10.4 10.4 10.4s10.4-4.8 10.4-10.4V10.4c0-5.6-4.8-10.4-10.4-10.4M258.4 44.4c-4-4-10.4-4-14.4 0l-22 22c-4 4-4 10.4 0 14.4 3.6 4 10.4 4 14.4 0l22-22c4-4 4-10.4 0-14.4M41.2 140.8H10.4c-5.6 0-10.4 4.8-10.4 10.4s4.4 10.4 10.4 10.4h30.8c5.6 0 10.4-4.8 10.4-10.4s-4.8-10.4-10.4-10.4M80.4 221.6c-3.6-4-10.4-4-14.4 0l-22 22c-4 4-4 10.4 0 14.4s10.4 4 14.4 0l22-22c4-4 4-10.4 0-14.4M80.4 66.4l-22-22c-4-4-10.4-4-14.4 0s-4 10.4 0 14.4l22 22c4 4 10.4 4 14.4 0s4-10.4 0-14.4"></path>
+                  </svg>
+                </div>
+              `;
+            }
+
+            const moon = link.querySelector('.theme-moon') as HTMLElement;
+            const sun = link.querySelector('.theme-sun') as HTMLElement;
+            if (moon && sun) {
+              moon.style.opacity = isDark ? '1' : '0';
+              moon.style.transform = isDark ? 'rotate(0deg) scale(1)' : 'rotate(-90deg) scale(0.5)';
+
+              sun.style.opacity = isDark ? '0' : '1';
+              sun.style.transform = isDark ? 'rotate(90deg) scale(0.5)' : 'rotate(0deg) scale(1)';
+            }
           }
         };
         updateIcon();
@@ -667,8 +748,6 @@ export class RouteTrackerCard extends LitElement {
     return R * c;
   }
 
-
-
   private async fetchAndDrawRoute() {
     if (!this.selectedDevice || !this.selectedDate) return;
 
@@ -761,13 +840,15 @@ export class RouteTrackerCard extends LitElement {
       return;
     }
 
-    const isDark = this.isDarkMode && !this._isSatellite;
+    const isSatellite = this._isSatellite;
+    const isDark = this.isDarkMode && !isSatellite;
+    const isCartoDark = isDark && this._currentProvider === 'CartoDB Voyager';
 
-    const routeColor = isDark ? '#167A87' : '#00CCE6';
-    const routeOpacity = isDark ? 0.9 : 0.6;
-    const arrowColor = isDark ? '#0D4F58' : '#009fb9';
-    const beadBorderColor = isDark ? '#01252a' : '#d1ebf7';
-    const beadFillColor = isDark ? '#45929c' : '#5db4cb';
+    const routeColor = isSatellite ? '#00CCE6' : (isCartoDark ? '#45949c' : (isDark ? '#167A87' : '#00CCE6'));
+    const routeOpacity = isSatellite ? 0.4 : (isCartoDark ? 0.9 : (isDark ? 0.9 : 0.5));
+    const arrowColor = isSatellite ? '#b8c9cc' : (isCartoDark ? '#79abb3' : (isDark ? '#0D4F58' : '#009fb9'));
+    const beadBorderColor = isSatellite ? '#d1ebf7' : (isCartoDark ? '#b2d2d5' : (isDark ? '#01252a' : '#d1ebf7'));
+    const beadFillColor = isSatellite ? '#5db4cb' : (isCartoDark ? '#41838c' : (isDark ? '#45929c' : '#5db4cb'));
 
     if (points.length > 1) {
       const polyline = L.polyline(points.map(p => p.loc), {
@@ -785,7 +866,7 @@ export class RouteTrackerCard extends LitElement {
               symbol: (window as any).L.Symbol.arrowHead({
                 pixelSize: 8,
                 polygon: false,
-                pathOptions: { stroke: true, color: arrowColor, weight: 2, opacity: 0.9 }
+                pathOptions: { stroke: true, color: arrowColor, weight: 2 }
               })
             }
           ]
@@ -864,19 +945,25 @@ export class RouteTrackerCard extends LitElement {
   }
 
   private updateMapThemeClass(): void {
-    if (this.mapContainer) {
-      if (this.isDarkMode && !this._isSatellite) {
+    if (!this.mapContainer) return;
+
+    this.mapContainer.classList.toggle('carto-provider', this._currentProvider === 'CartoDB Voyager');
+
+    if (this._currentProvider === 'Esri Satellite') {
+      this.mapContainer.classList.remove('dark-mode');
+    } else {
+      if (this.isDarkMode) {
         this.mapContainer.classList.add('dark-mode');
       } else {
         this.mapContainer.classList.remove('dark-mode');
       }
-      const controls = this.mapContainer.querySelectorAll('.leaflet-control');
-      controls.forEach((c: any) => {
-        if (typeof c.updateThemeIcon === 'function') {
-          c.updateThemeIcon();
-        }
-      });
     }
+    const controls = this.mapContainer.querySelectorAll('.leaflet-control');
+    controls.forEach((c: any) => {
+      if (typeof c.updateThemeIcon === 'function') {
+        c.updateThemeIcon();
+      }
+    });
   }
 
   private toggleManualTheme(): void {
@@ -906,7 +993,9 @@ export class RouteTrackerCard extends LitElement {
                 aria-expanded="false"
                 @click=${this.openControls}
               >
-                ☰
+                <svg style="width:24px;height:24px" viewBox="0 0 24 24">
+                  <path fill="currentColor" d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z" />
+                </svg>
               </button>
             `}
         <div class=${controlPanelClass}>

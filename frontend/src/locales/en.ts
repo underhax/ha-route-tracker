@@ -25,4 +25,8 @@ export const en = {
   'editor.theme_light': 'Light',
   'editor.theme_dark': 'Dark',
   "editor.map_provider": "Map Provider",
+  'card.reset_view': 'Reset View',
+  'card.toggle_theme': 'Toggle Theme',
+  'card.zoom_in': 'Zoom in',
+  'card.zoom_out': 'Zoom out',
 };
