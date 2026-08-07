@@ -262,7 +262,7 @@ export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEd
             <button class="btn-remove" @click=${() => this._removeItem(section, index)} title="Remove">🗑</button>
           </div>
           ${section === 'entities' && this._routeEntityError(ent.entity || '')
-            ? html`<p class="entity-error">${this._routeEntityError(ent.entity || '')}</p>`
+            ? html`<p class="entity-error">${this._routeEntityError(ent.entity)}</p>`
             : ''}
         `)}
         <button class="btn-add" @click=${() => this._addItem(section)}>${addLabel}</button>

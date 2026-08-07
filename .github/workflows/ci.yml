@@ -41,6 +41,9 @@ jobs:
       - name: Audit production frontend dependencies
         run: npm --prefix frontend audit --omit=dev
 
+      - name: Run frontend tests
+        run: npm --prefix frontend test
+
       - name: Build frontend
         run: npm --prefix frontend run build
 

@@ -35,7 +35,7 @@ export function drawRouteOnMap(options: DrawRouteOptions): L.LatLngBounds | unde
 
   routeLayer.clearLayers();
 
-  if (points.length === 0) {
+  if (!points || !Array.isArray(points) || points.length === 0) {
     map.setView([fallbackLat, fallbackLon], 19);
     return undefined;
   }
@@ -113,10 +113,7 @@ export function drawRouteOnMap(options: DrawRouteOptions): L.LatLngBounds | unde
     }
   });
 
-  if (points.length > 0) {
-    const routeBounds = L.latLngBounds(points.map(p => p.loc));
-    map.fitBounds(routeBounds);
-    return routeBounds;
-  }
-  return undefined;
+  const routeBounds = L.latLngBounds(points.map(p => p.loc));
+  map.fitBounds(routeBounds);
+  return routeBounds;
 }
