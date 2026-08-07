@@ -1,4 +1,4 @@
-import { LitElement, html, css, PropertyValues, unsafeCSS } from 'lit';
+import { LitElement, html, PropertyValues, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { HomeAssistant } from 'custom-card-helpers';
 import * as L from 'leaflet';
@@ -6,12 +6,22 @@ import 'leaflet-polylinedecorator';
 import leafletCss from 'leaflet/dist/leaflet.css?inline';
 import './route-tracker-card-editor';
 import { localize } from './localize';
+import { cardLayoutStyles } from './css/card-layout';
+import { mapFiltersStyles } from './css/map-filters';
+import { uiControlsStyles } from './css/ui-controls';
+import { leafletOverridesStyles } from './css/leaflet-overrides';
+
 import {
   getEligibleRouteEntities,
   getSelectedTrackersForPerson,
   isEligibleRouteEntity,
   toVirtualSensorId,
 } from './tracker-eligibility';
+
+import { resetViewSvg } from './icons/reset-view';
+import { themeToggleSvg } from './icons/theme-toggle';
+import { markerSvg } from './icons/marker';
+import { hamburgerSvg } from './icons/hamburger';
 
 interface RoutePoint {
   loc: L.LatLng;
@@ -97,259 +107,11 @@ export class RouteTrackerCard extends LitElement {
 
   static styles = [
     unsafeCSS(leafletCss),
-    css`
-    :host {
-      --route-tracker-header-height: 56px;
-      --route-tracker-edit-header-height: 114px;
-      --route-tracker-edit-panel-height: 65px;
-      --route-tracker-standard-available-height: calc(
-        100dvh - var(--route-tracker-header-height)
-      );
-      --route-tracker-edit-available-height: calc(
-        100dvh
-        - var(--route-tracker-edit-header-height)
-        - var(--route-tracker-edit-panel-height)
-      );
-
-      display: block;
-      position: relative;
-      width: 100%;
-      min-width: 0;
-      height: 100%;
-      min-height: 400px;
-      max-height: var(--route-tracker-standard-available-height);
-      aspect-ratio: 16 / 9;
-      border-radius: var(--ha-card-border-radius, 12px);
-      overflow: hidden;
-      box-shadow: var(--ha-card-box-shadow, 0px 2px 4px 0px rgba(0,0,0,0.16));
-    }
-    :host(.is-editing-panel) {
-      min-height: 0;
-      max-height: var(--route-tracker-edit-available-height);
-    }
-    .card-content {
-      position: absolute;
-      inset: 0;
-      container-type: inline-size;
-    }
-    #map {
-      position: absolute;
-      inset: 0;
-      z-index: 1;
-    }
-    #map.dark-mode {
-      filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
-    }
-    #map.dark-mode.carto-provider {
-      filter: invert(100%) hue-rotate(180deg) brightness(150%) contrast(90%);
-    }
-    #map.dark-mode.carto-provider .leaflet-overlay-pane,
-    #map.dark-mode.carto-provider .leaflet-marker-pane {
-      filter: contrast(111%) brightness(66.6%) hue-rotate(180deg) invert(100%);
-    }
-    #map.dark-mode .leaflet-bar {
-      filter: invert(100%) hue-rotate(180deg) brightness(105%) contrast(111%);
-    }
-
-    #map.dark-mode:not(.carto-provider) .zone-label {
-      filter: invert(100%) hue-rotate(180deg) brightness(105%) contrast(111%);
-    }
-
-    .attribution-outside {
-      position: absolute !important;
-      bottom: 0px !important;
-      right: 0px !important;
-      z-index: 3 !important;
-      background-color: rgb(247, 247, 247);
-      border-radius: 3px 0px;
-      font-size: 12px;
-    }
-    .attribution-outside a {
-      color: #3289ce;
-      font-size: 12px;
-    }
-
-    .control-panel, .provider-selector, .controls-toggle {
-      background-color: #333334 !important;
-      backdrop-filter: blur(10px) !important;
-    }
-    .control-panel {
-      position: absolute;
-      top: 16px;
-      right: 16px;
-      z-index: 3;
-      box-sizing: border-box;
-      width: 284px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      padding: 16px;
-      color: #fff;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-      font-family: var(--paper-font-body1_-_font-family, 'Roboto', sans-serif);
-    }
-    .control-panel-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-    }
-    .control-panel h3 {
-      margin: 0;
-      font-size: 14px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #64b5f6;
-    }
-    .control-panel-close,
-    .controls-toggle {
-      display: none;
-      align-items: center;
-      justify-content: center;
-      border: 0;
-      border-radius: 8px;
-      color: #fff;
-      cursor: pointer;
-      font: inherit;
-    }
-    .control-panel-close {
-      width: 32px;
-      height: 32px;
-      margin: -4px -4px -4px 8px;
-      background: transparent;
-      font-size: 28px;
-      line-height: 1;
-    }
-    .controls-toggle {
-      position: absolute;
-      top: 16px;
-      right: 16px;
-      z-index: 3;
-      width: 44px;
-      height: 44px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-      font-size: 24px;
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      line-height: 0;
-      padding: 0;
-    }
-    .control-panel-close:focus-visible,
-    .controls-toggle:focus-visible {
-      outline: 2px solid #64b5f6;
-      outline-offset: 2px;
-    }
-    @container (max-width: 640px) {
-      .control-panel {
-        display: none;
-        width: min(284px, calc(100% - 32px));
-      }
-      .control-panel.is-open {
-        display: block;
-      }
-      .control-panel-close {
-        display: flex;
-      }
-    }
-    .input-group {
-      display: flex;
-      flex-direction: column;
-      margin-bottom: 12px;
-    }
-    .input-group label {
-      font-size: 12px;
-      margin-bottom: 4px;
-      color: #aaa;
-    }
-    select, input[type="date"] {
-      background: rgba(0, 0, 0, 0.5);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: white;
-      padding: 8px;
-      border-radius: 6px;
-      font-size: 14px;
-      outline: none;
-      transition: border-color 0.3s;
-    }
-    select:focus, input[type="date"]:focus {
-      border-color: #64b5f6;
-    }
-
-    .provider-selector {
-      position: absolute !important;
-      bottom: 16px !important;
-      left: 16px !important;
-      z-index: 3 !important;
-      border: 1px solid rgba(255, 255, 255, 0.1) !important;
-      border-radius: 12px !important;
-      color: #fff !important;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
-      padding: 6px !important;
-    }
-    .provider-selector .leaflet-control-layers-toggle {
-      width: 44px !important;
-      height: 44px !important;
-      background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill='%23999999' d='M199.39 225.91 14.93 321.64c-20.055 10.407-19.864 39.165.324 49.301l185.59 93.211a122.9 122.9 0 0 0 110.312 0l185.586-93.21c20.192-10.141 20.383-38.895.328-49.301l-184.465-95.73a122.9 122.9 0 0 0-113.214 0'/%3E%3Cpath fill='%23cccccc' d='M199.39 119.86 14.93 215.593c-20.055 10.406-19.864 39.16.324 49.3l185.59 93.211a122.9 122.9 0 0 0 110.312 0l185.586-93.21c20.192-10.141 20.383-38.895.328-49.301l-184.465-95.73a122.9 122.9 0 0 0-113.214-.005'/%3E%3Cpath fill='%23b3b3b3' d='m311.156 358.105 130.188-65.386-128.739-66.809a122.89 122.89 0 0 0-113.21 0L70.656 292.72l130.188 65.386a122.9 122.9 0 0 0 110.312 0'/%3E%3Cpath fill='%23ffffff' d='m199.39 13.813-184.46 95.73c-20.055 10.41-19.864 39.164.324 49.305l185.59 93.21a122.9 122.9 0 0 0 110.312 0l185.586-93.21c20.192-10.141 20.383-38.895.328-49.305l-184.465-95.73a122.9 122.9 0 0 0-113.214 0'/%3E%3Cpath fill='%23e6e6e6' d='m311.156 252.059 130.188-65.387-128.739-66.813a122.89 122.89 0 0 0-113.21 0L70.656 186.672l130.188 65.387a122.9 122.9 0 0 0 110.312 0'/%3E%3Cpath fill='%23cccccc' d='m311.156 252.059 26.344-13.23-24.895-12.919a122.9 122.9 0 0 0-113.214 0L174.5 238.828l26.344 13.23a122.9 122.9 0 0 0 110.312 0'/%3E%3C/svg%3E") !important;
-      background-size: 26px 26px !important;
-      background-position: center !important;
-      background-repeat: no-repeat !important;
-    }
-    .provider-selector.leaflet-control-layers-expanded {
-      padding: 8px !important;
-    }
-    .provider-selector .leaflet-control-layers-list,
-    .provider-selector .leaflet-control-layers-scrollbar {
-      margin: 0 !important;
-      padding: 0 !important;
-      height: auto !important;
-      max-height: none !important;
-      overflow: visible !important;
-    }
-    .provider-selector label {
-      display: flex !important;
-      align-items: center !important;
-      padding: 10px 12px !important;
-      margin: 2px 0 !important;
-      cursor: pointer !important;
-      border-radius: 8px !important;
-      transition: background 0.2s !important;
-    }
-    .provider-selector label:hover {
-      background: rgba(255, 255, 255, 0.1) !important;
-    }
-    .provider-selector input[type="radio"] {
-      margin: 0 12px 0 0 !important;
-      accent-color: #64b5f6 !important;
-      width: 18px !important;
-      height: 18px !important;
-      cursor: pointer !important;
-    }
-    .provider-selector span {
-      font-family: var(--paper-font-body1_-_font-family, 'Roboto', sans-serif) !important;
-      font-size: 14px !important;
-      line-height: 1 !important;
-    }
-    .provider-selector .leaflet-control-layers-separator {
-      display: none !important;
-    }
-
-    .leaflet-bar a {
-      background-color: #f7f7f7 !important;
-      color: #222324 !important;
-    }
-    .leaflet-bar a:hover {
-      background-color: #e6e6e6 !important;
-      color: #000 !important;
-    }
-    .leaflet-bar a.leaflet-disabled,
-    .leaflet-bar a.leaflet-disabled:hover {
-      background-color: #f7f7f7 !important;
-      color: #bbb !important;
-      cursor: default !important;
-    }
-  `];
+    cardLayoutStyles,
+    mapFiltersStyles,
+    uiControlsStyles,
+    leafletOverridesStyles
+  ];
 
   public setConfig(config: any): void {
     if (!config) {
@@ -511,13 +273,13 @@ export class RouteTrackerCard extends LitElement {
     this.mapContainer = mapContainer;
     this.startObservingMapSize();
 
-    const lat = this.hass.config.latitude || 50.0;
-    const lon = this.hass.config.longitude || 30.0;
+    const lat = this.hass.config.latitude || 0.0;
+    const lon = this.hass.config.longitude || 0.0;
     const currentLang = this.hass?.language || 'en';
 
     this.map = L.map(mapContainer, {
       zoomControl: false
-    }).setView([lat, lon], 13);
+    }).setView([lat, lon], 19);
 
     L.control.zoom({
       zoomInTitle: localize('card.zoom_in', currentLang),
@@ -596,7 +358,7 @@ export class RouteTrackerCard extends LitElement {
         link.style.justifyContent = 'center';
         link.style.alignItems = 'center';
         link.style.cursor = 'pointer';
-        link.innerHTML = '<svg style="width:20px;height:20px;" viewBox="0 0 24 24"><path fill="currentColor" d="M12 9A3 3 0 0 0 9 12A3 3 0 0 0 12 15A3 3 0 0 0 15 12A3 3 0 0 0 12 9M19 19H15V21H19A2 2 0 0 0 21 19V15H19M19 3H15V5H19V9H21V5A2 2 0 0 0 19 3M5 5H9V3H5A2 2 0 0 0 3 5V9H5M5 15H3V19A2 2 0 0 0 5 21H9V19H5V15Z"/></svg>';
+        link.innerHTML = resetViewSvg;
 
         link.onclick = (e) => {
           e.preventDefault();
@@ -632,16 +394,7 @@ export class RouteTrackerCard extends LitElement {
 
             const isDark = this.isDarkMode;
             if (link.children.length === 0) {
-              link.innerHTML = `
-                <div style="position:relative; width:20px; height:20px; display:flex; justify-content:center; align-items:center;">
-                  <svg class="theme-moon" style="position:absolute; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1); width:20px; height:20px;" viewBox="-40 -40 393 393">
-                    <path fill="currentColor" d="M305.6 178.053c-3.2-.8-6.4 0-9.2 2-10.4 8.8-22.4 16-35.6 20.8-12.4 4.8-26 7.2-40.4 7.2-32.4 0-62-13.2-83.2-34.4s-34.4-50.8-34.4-83.2c0-13.6 2.4-26.8 6.4-38.8 4.4-12.8 10.8-24.4 19.2-34.4 3.6-4.4 2.8-10.8-1.6-14.4-2.8-2-6-2.8-9.2-2-34 9.2-63.6 29.6-84.8 56.8-20.4 26.8-32.8 60-32.8 96.4 0 43.6 17.6 83.2 46.4 112s68.4 46.4 112 46.4c36.8 0 70.8-12.8 98-34 27.6-21.6 47.6-52.4 56-87.6 2-6-1.2-11.6-6.8-12.8m-61.2 83.6c-23.2 18.4-52.8 29.6-85.2 29.6-38 0-72.4-15.6-97.2-40.4s-40.4-59.2-40.4-97.2c0-31.6 10.4-60.4 28.4-83.6 12.4-16 28-29.2 46-38.4-2 4.4-4 8.8-5.6 13.6-5.2 14.4-7.6 29.6-7.6 45.6 0 38 15.6 72.8 40.4 97.6s59.6 40.4 97.6 40.4c16.8 0 32.8-2.8 47.6-8.4 5.2-2 10.4-4 15.2-6.4-9.6 18.4-22.8 34.8-39.2 47.6"></path>
-                  </svg>
-                  <svg class="theme-sun" style="position:absolute; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1); width:20px; height:20px;" viewBox="0 0 302.4 302.4">
-                    <path fill="currentColor" d="M204.8 97.6C191.2 84 172 75.2 151.2 75.2s-40 8.4-53.6 22.4c-13.6 13.6-22.4 32.8-22.4 53.6s8.8 40 22.4 53.6 32.8 22.4 53.6 22.4 40-8.4 53.6-22.4c13.6-13.6 22.4-32.8 22.4-53.6s-8.4-40-22.4-53.6m-14.4 92.8c-10 10-24 16-39.2 16s-29.2-6-39.2-16-16-24-16-39.2 6-29.2 16-39.2 24-16 39.2-16 29.2 6 39.2 16 16 24 16 39.2-6 29.2-16 39.2M292 140.8h-30.8c-5.6 0-10.4 4.8-10.4 10.4s4.8 10.4 10.4 10.4H292c5.6 0 10.4-4.8 10.4-10.4s-4.8-10.4-10.4-10.4M151.2 250.8c-5.6 0-10.4 4.8-10.4 10.4V292c0 5.6 4.8 10.4 10.4 10.4s10.4-4.8 10.4-10.4v-30.8c0-5.6-4.8-10.4-10.4-10.4M258 243.6l-22-22c-3.6-4-10.4-4-14.4 0s-4 10.4 0 14.4l22 22c4 4 10.4 4 14.4 0s4-10.4 0-14.4M151.2 0c-5.6 0-10.4 4.8-10.4 10.4v30.8c0 5.6 4.8 10.4 10.4 10.4s10.4-4.8 10.4-10.4V10.4c0-5.6-4.8-10.4-10.4-10.4M258.4 44.4c-4-4-10.4-4-14.4 0l-22 22c-4 4-4 10.4 0 14.4 3.6 4 10.4 4 14.4 0l22-22c4-4 4-10.4 0-14.4M41.2 140.8H10.4c-5.6 0-10.4 4.8-10.4 10.4s4.4 10.4 10.4 10.4h30.8c5.6 0 10.4-4.8 10.4-10.4s-4.8-10.4-10.4-10.4M80.4 221.6c-3.6-4-10.4-4-14.4 0l-22 22c-4 4-4 10.4 0 14.4s10.4 4 14.4 0l22-22c4-4 4-10.4 0-14.4M80.4 66.4l-22-22c-4-4-10.4-4-14.4 0s-4 10.4 0 14.4l22 22c4 4 10.4 4 14.4 0s4-10.4 0-14.4"></path>
-                  </svg>
-                </div>
-              `;
+              link.innerHTML = themeToggleSvg;
             }
 
             const moon = link.querySelector('.theme-moon') as HTMLElement;
@@ -834,9 +587,9 @@ export class RouteTrackerCard extends LitElement {
     this.routeLayer.clearLayers();
 
     if (points.length === 0) {
-      const lat = this.hass.config.latitude || 50.0;
-      const lon = this.hass.config.longitude || 30.0;
-      this.map.setView([lat, lon], 20);
+      const lat = this.hass.config.latitude || 0.0;
+      const lon = this.hass.config.longitude || 0.0;
+      this.map.setView([lat, lon], 19);
       return;
     }
 
@@ -878,7 +631,7 @@ export class RouteTrackerCard extends LitElement {
       if (index === points.length - 1) {
         const currentIcon = L.divIcon({
           className: '',
-          html: '<svg width="24" height="36" viewBox="0 0 24 36"><path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 24 12 24s12-15 12-24C24 5.4 18.6 0 12 0z" fill="#ff5252"/><circle cx="12" cy="12" r="5" fill="#fff"/></svg>',
+          html: markerSvg,
           iconSize: [24, 36],
           iconAnchor: [12, 36],
           popupAnchor: [0, -36]
@@ -993,9 +746,7 @@ export class RouteTrackerCard extends LitElement {
                 aria-expanded="false"
                 @click=${this.openControls}
               >
-                <svg style="width:24px;height:24px" viewBox="0 0 24 24">
-                  <path fill="currentColor" d="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z" />
-                </svg>
+                ${hamburgerSvg}
               </button>
             `}
         <div class=${controlPanelClass}>
