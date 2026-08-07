@@ -18,15 +18,11 @@ import {
   toVirtualSensorId,
 } from './tracker-eligibility';
 
-import { resetViewSvg } from './icons/reset-view';
-import { themeToggleSvg } from './icons/theme-toggle';
-import { markerSvg } from './icons/marker';
 import { hamburgerSvg } from './icons/hamburger';
 
-interface RoutePoint {
-  loc: L.LatLng;
-  timestamp: string;
-}
+import { getBaseMaps } from './utils/map-providers';
+import { createResetControl, createThemeControl } from './utils/map-controls';
+import { RoutePoint, calculateDistance, drawRouteOnMap } from './utils/route-drawer';
 
 interface ConfiguredRouteEntity {
   entity: string;
@@ -295,20 +291,7 @@ export class RouteTrackerCard extends LitElement {
       }
     }
 
-    const baseMaps: Record<string, L.TileLayer> = {
-      'OpenStreetMap DE': L.tileLayer('https://tile.openstreetmap.de/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" rel="noopener noreferrer" target="_blank">OpenStreetMap</a> contributors',
-        maxZoom: 19
-      }),
-      'CartoDB Voyager': L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" rel="noopener noreferrer" target="_blank">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions" rel="noopener noreferrer" target="_blank">CARTO</a>',
-        maxZoom: 19
-      }),
-      'Esri Satellite': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; <a href="https://www.esri.com/" rel="noopener noreferrer" target="_blank">Esri</a>',
-        maxZoom: 19
-      })
-    };
+    const baseMaps = getBaseMaps();
 
     const providerKey = this.config?.map_provider || 'osm_default';
     let defaultLayer = baseMaps['OpenStreetMap DE'];
@@ -347,82 +330,27 @@ export class RouteTrackerCard extends LitElement {
     this._lastIsDark = this.isDarkMode;
     this.updateMapThemeClass();
 
-    const ResetControl = L.Control.extend({
-      options: { position: 'topleft' },
-      onAdd: () => {
-        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-        const link = L.DomUtil.create('a', '', container);
-        link.href = '#';
-        link.title = localize('card.reset_view', currentLang);
-        link.style.display = 'flex';
-        link.style.justifyContent = 'center';
-        link.style.alignItems = 'center';
-        link.style.cursor = 'pointer';
-        link.innerHTML = resetViewSvg;
-
-        link.onclick = (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          if (this.routeBounds) {
-            this.map?.fitBounds(this.routeBounds);
-          }
-        };
-
-        L.DomEvent.disableClickPropagation(container);
-        return container;
+    const resetControl = createResetControl(
+      localize,
+      currentLang,
+      () => {
+        if (this.routeBounds) {
+          this.map?.fitBounds(this.routeBounds);
+        }
       }
-    });
-    this.map.addControl(new ResetControl());
+    );
 
-    const ThemeControl = L.Control.extend({
-      options: { position: 'topleft' },
-      onAdd: () => {
-        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-        const link = L.DomUtil.create('a', '', container);
-        link.href = '#';
-        link.title = localize('card.toggle_theme', currentLang);
-        link.style.display = 'flex';
-        link.style.justifyContent = 'center';
-        link.style.alignItems = 'center';
-        link.style.cursor = 'pointer';
+    this.map.addControl(resetControl);
 
-        const updateIcon = () => {
-          if (this._isSatellite) {
-            container.style.display = 'none';
-          } else {
-            container.style.display = 'block';
+    const themeControl = createThemeControl(
+      localize,
+      currentLang,
+      () => this._isSatellite,
+      () => this.isDarkMode,
+      () => this.toggleManualTheme()
+    );
 
-            const isDark = this.isDarkMode;
-            if (link.children.length === 0) {
-              link.innerHTML = themeToggleSvg;
-            }
-
-            const moon = link.querySelector('.theme-moon') as HTMLElement;
-            const sun = link.querySelector('.theme-sun') as HTMLElement;
-            if (moon && sun) {
-              moon.style.opacity = isDark ? '1' : '0';
-              moon.style.transform = isDark ? 'rotate(0deg) scale(1)' : 'rotate(-90deg) scale(0.5)';
-
-              sun.style.opacity = isDark ? '0' : '1';
-              sun.style.transform = isDark ? 'rotate(90deg) scale(0.5)' : 'rotate(0deg) scale(1)';
-            }
-          }
-        };
-        updateIcon();
-        (container as any).updateThemeIcon = updateIcon;
-
-        link.onclick = (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          if (this._isSatellite) return;
-          this.toggleManualTheme();
-        };
-
-        L.DomEvent.disableClickPropagation(container);
-        return container;
-      }
-    });
-    this.map.addControl(new ThemeControl());
+    this.map.addControl(themeControl);
   }
 
   private drawZones(): void {
@@ -490,16 +418,7 @@ export class RouteTrackerCard extends LitElement {
     return null;
   }
 
-  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * (Math.PI / 180);
-    const dLon = (lon2 - lon1) * (Math.PI / 180);
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-              Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
-              Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  }
+
 
   private async fetchAndDrawRoute() {
     if (!this.selectedDevice || !this.selectedDate) return;
@@ -552,7 +471,7 @@ export class RouteTrackerCard extends LitElement {
             points.push({ loc: L.latLng(loc[0], loc[1]), timestamp: timeStr });
             lastLoc = loc;
           } else {
-            const dist = this.calculateDistance(lastLoc[0], lastLoc[1], loc[0], loc[1]);
+            const dist = calculateDistance(lastLoc[0], lastLoc[1], loc[0], loc[1]);
 
             if (dist > minDistance) {
               points.push({ loc: L.latLng(loc[0], loc[1]), timestamp: timeStr });
@@ -569,7 +488,7 @@ export class RouteTrackerCard extends LitElement {
         if (!lastLoc) {
           points.push({ loc: L.latLng(currentLoc[0], currentLoc[1]), timestamp: timeStr });
         } else {
-          const dist = this.calculateDistance(lastLoc[0], lastLoc[1], currentLoc[0], currentLoc[1]);
+          const dist = calculateDistance(lastLoc[0], lastLoc[1], currentLoc[0], currentLoc[1]);
           if (dist > minDistance) {
             points.push({ loc: L.latLng(currentLoc[0], currentLoc[1]), timestamp: timeStr });
           }
@@ -584,92 +503,22 @@ export class RouteTrackerCard extends LitElement {
   private drawRoute(points: RoutePoint[]) {
     this._lastPoints = points;
     if (!this.map || !this.routeLayer) return;
-    this.routeLayer.clearLayers();
 
-    if (points.length === 0) {
-      const lat = this.hass.config.latitude || 0.0;
-      const lon = this.hass.config.longitude || 0.0;
-      this.map.setView([lat, lon], 19);
-      return;
-    }
-
-    const isSatellite = this._isSatellite;
-    const isDark = this.isDarkMode && !isSatellite;
-    const isCartoDark = isDark && this._currentProvider === 'CartoDB Voyager';
-
-    const routeColor = isSatellite ? '#00CCE6' : (isCartoDark ? '#45949c' : (isDark ? '#167A87' : '#00CCE6'));
-    const routeOpacity = isSatellite ? 0.4 : (isCartoDark ? 0.9 : (isDark ? 0.9 : 0.5));
-    const arrowColor = isSatellite ? '#b8c9cc' : (isCartoDark ? '#79abb3' : (isDark ? '#0D4F58' : '#009fb9'));
-    const beadBorderColor = isSatellite ? '#d1ebf7' : (isCartoDark ? '#b2d2d5' : (isDark ? '#01252a' : '#d1ebf7'));
-    const beadFillColor = isSatellite ? '#5db4cb' : (isCartoDark ? '#41838c' : (isDark ? '#45929c' : '#5db4cb'));
-
-    if (points.length > 1) {
-      const polyline = L.polyline(points.map(p => p.loc), {
-        color: routeColor,
-        weight: 6,
-        opacity: routeOpacity
-      }).addTo(this.routeLayer);
-
-      if ((window as any).L.polylineDecorator) {
-        (window as any).L.polylineDecorator(polyline, {
-          patterns: [
-            {
-              offset: 50,
-              repeat: 150,
-              symbol: (window as any).L.Symbol.arrowHead({
-                pixelSize: 8,
-                polygon: false,
-                pathOptions: { stroke: true, color: arrowColor, weight: 2 }
-              })
-            }
-          ]
-        }).addTo(this.routeLayer!);
-      }
-    }
-
-    points.forEach((point, index) => {
-      if (index === points.length - 1) {
-        const currentIcon = L.divIcon({
-          className: '',
-          html: markerSvg,
-          iconSize: [24, 36],
-          iconAnchor: [12, 36],
-          popupAnchor: [0, -36]
-        });
-        L.marker(point.loc, { icon: currentIcon }).addTo(this.routeLayer!).bindPopup(`<b>${localize('card.current_location', this.hass.language)}</b><br>${point.timestamp}`);
-      } else if (index === 0) {
-        L.circleMarker(point.loc, {
-          radius: 6,
-          color: '#4caf50',
-          fillColor: '#4caf50',
-          fillOpacity: 1
-        }).addTo(this.routeLayer!).bindPopup(`<b>${localize('card.start', this.hass.language)}</b><br>${point.timestamp}`);
-      } else {
-        const hitArea = L.circleMarker(point.loc, {
-          radius: 12,
-          color: 'transparent',
-          fillColor: 'transparent',
-          fillOpacity: 0,
-          weight: 0,
-          interactive: true
-        }).addTo(this.routeLayer!).bindPopup(point.timestamp);
-
-        L.circleMarker(point.loc, {
-          radius: 3,
-          color: beadBorderColor,
-          fillColor: beadFillColor,
-          fillOpacity: 1,
-          weight: 1.5,
-          interactive: false
-        }).addTo(this.routeLayer!);
-
-        hitArea.on('click', () => { hitArea.openPopup(); });
-      }
+    const bounds = drawRouteOnMap({
+      points,
+      map: this.map,
+      routeLayer: this.routeLayer,
+      isSatellite: this._isSatellite,
+      isDarkMode: this.isDarkMode,
+      currentProvider: this._currentProvider,
+      localize,
+      language: this.hass.language,
+      fallbackLat: this.hass.config.latitude || 0.0,
+      fallbackLon: this.hass.config.longitude || 0.0
     });
 
-    if (points.length > 0) {
-      this.routeBounds = L.latLngBounds(points.map(p => p.loc));
-      this.map.fitBounds(this.routeBounds);
+    if (bounds) {
+      this.routeBounds = bounds;
     }
   }
 
