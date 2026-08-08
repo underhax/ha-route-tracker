@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createResetControl, createThemeControl } from './map-controls';
 
-describe('map-controls', () => {
+describe('MapControls', () => {
   const localize = vi.fn((key: string) => `translated_${key}`);
 
-  describe('createResetControl', () => {
+  describe('createResetControl()', () => {
     it('creates control and triggers onReset on click', () => {
       const onReset = vi.fn();
       const control = createResetControl(localize, 'en', onReset);
@@ -26,7 +26,7 @@ describe('map-controls', () => {
     });
   });
 
-  describe('createThemeControl', () => {
+  describe('createThemeControl()', () => {
     it('creates control and toggles theme', () => {
       let isSatellite = false;
       let isDark = false;

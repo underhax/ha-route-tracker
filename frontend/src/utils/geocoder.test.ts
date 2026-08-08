@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { fetchAddress } from './geocoder';
 
-describe('Geocoder', () => {
+describe('fetchAddress()', () => {
   beforeEach(() => {
     globalThis.fetch = vi.fn();
   });

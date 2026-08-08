@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { localize } from './localize';
 
-describe('localize', () => {
+describe('localize()', () => {
   it('returns translation for a known key and language', () => {
     expect(localize('card.name', 'en')).toBe('Route Tracker');
     expect(typeof localize('card.name', 'de')).toBe('string');

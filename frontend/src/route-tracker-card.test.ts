@@ -33,12 +33,12 @@ describe('RouteTrackerCard', () => {
   });
 
   describe('Static Methods', () => {
-    it('getConfigElement returns an editor element', async () => {
+    it('returns an editor element via getConfigElement()', async () => {
       const editor = await RouteTrackerCard.getConfigElement();
       expect(editor.tagName.toLowerCase()).toBe('route-tracker-card-editor');
     });
 
-    it('getStubConfig returns correct type', () => {
+    it('returns a default configuration via getStubConfig()', () => {
       const stub = RouteTrackerCard.getStubConfig();
       expect(stub['type']).toBe('custom:route-tracker-card');
     });

@@ -110,6 +110,8 @@ export const uiControlsStyles = css`
     color: #aaa;
   }
   select, input[type="date"] {
+    width: 100%;
+    box-sizing: border-box;
     background: rgba(0, 0, 0, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.2);
     color: white;

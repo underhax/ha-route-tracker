@@ -4,8 +4,8 @@ import * as marker from './marker';
 import * as resetView from './reset-view';
 import * as themeToggle from './theme-toggle';
 
-describe('Icon Exports', () => {
-  it('should have exports', () => {
+describe('Icons', () => {
+  it('exports defined SVG strings for all icons', () => {
     expect(Object.keys(hamburger).length).toBeGreaterThan(0);
     expect(Object.keys(marker).length).toBeGreaterThan(0);
     expect(Object.keys(resetView).length).toBeGreaterThan(0);

@@ -1,4 +1,4 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { HomeAssistant, LovelaceCardEditor } from 'custom-card-helpers';
 import { localize } from './localize';
@@ -6,6 +6,8 @@ import {
   getRouteEntityEligibility,
   isEligibleRouteEntity,
 } from './tracker-eligibility';
+import { ROUTING_PROVIDERS, DEFAULT_ROUTING_PROVIDER } from './utils/routing-providers';
+import { editorStyles } from './css/editor';
 
 @customElement('route-tracker-card-editor')
 export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEditor {
@@ -18,110 +20,7 @@ export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEd
     this._config = config;
   }
 
-  static override styles = css`
-    .card-config {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .info {
-      padding: 16px;
-      background-color: var(--secondary-background-color, #f5f5f5);
-      border-radius: 8px;
-      color: var(--primary-text-color, #212121);
-      font-size: 14px;
-      line-height: 1.5;
-    }
-    .section-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-    }
-    .section-header h4 {
-      margin: 0;
-      color: var(--primary-text-color, #212121);
-    }
-    .entity-row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      margin-bottom: 8px;
-      padding: 8px;
-      border-radius: 8px;
-      background: var(--secondary-background-color, #f5f5f5);
-      transition: background 0.2s, opacity 0.2s, border-color 0.2s;
-      border: 2px solid transparent;
-      cursor: default;
-    }
-    .entity-row.drag-over {
-      border-color: var(--primary-color, #03a9f4);
-    }
-    .entity-row.dragging {
-      opacity: 0.4;
-    }
-    .drag-handle {
-      cursor: grab;
-      color: var(--secondary-text-color, #999);
-      font-size: 18px;
-      padding: 4px;
-      user-select: none;
-      display: flex;
-      align-items: center;
-      flex-shrink: 0;
-    }
-    .drag-handle:active {
-      cursor: grabbing;
-    }
-    .entity-row ha-entity-picker {
-      flex: 2;
-      min-width: 0;
-    }
-    .entity-row input {
-      flex: 1;
-      min-width: 0;
-      padding: 8px;
-      border: 1px solid var(--divider-color, #ccc);
-      border-radius: 4px;
-      background: var(--card-background-color, #fff);
-      color: var(--primary-text-color, #000);
-    }
-    .entity-error {
-      color: var(--error-color, #f44336);
-      font-size: 12px;
-      margin: 0 0 8px;
-    }
-    .btn-add {
-      padding: 8px 16px;
-      background: var(--primary-color, #03a9f4);
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    .btn-remove {
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: var(--secondary-text-color, #999);
-      font-size: 20px;
-      padding: 4px 8px;
-      border-radius: 4px;
-      transition: color 0.2s, background 0.2s;
-      display: flex;
-      align-items: center;
-    }
-    .btn-remove:hover {
-      color: var(--error-color, #f44336);
-      background: rgba(244, 67, 54, 0.1);
-    }
-    hr {
-      border: none;
-      border-top: 1px solid var(--divider-color, #ccc);
-      margin: 4px 0;
-    }
-  `;
+  static override styles = editorStyles;
 
   private _fireConfigChanged() {
     this.dispatchEvent(new CustomEvent('config-changed', {
@@ -290,14 +189,13 @@ export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEd
               this._config = { ...this._config, map_provider: (e.target as HTMLSelectElement).value };
               this._fireConfigChanged();
             }}
-            style="width: 100%; padding: 8px; border: 1px solid var(--divider-color, #ccc); border-radius: 4px; background: var(--card-background-color, #fff); color: var(--primary-text-color, #000);"
+            class="form-select"
           >
             <option value="osm_default">OpenStreetMap DE</option>
             <option value="carto_voyager">CartoDB Voyager</option>
             <option value="esri_satellite">Esri Satellite</option>
           </select>
         </div>
-
         <div>
           <h4>${localize('editor.theme_mode', lang)}</h4>
           <select
@@ -306,7 +204,7 @@ export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEd
               this._config = { ...this._config, theme_mode: (e.target as HTMLSelectElement).value };
               this._fireConfigChanged();
             }}
-            style="width: 100%; padding: 8px; border: 1px solid var(--divider-color, #ccc); border-radius: 4px; background: var(--card-background-color, #fff); color: var(--primary-text-color, #000);"
+            class="form-select"
           >
             <option value="auto">${localize('editor.theme_auto', lang)}</option>
             <option value="light">${localize('editor.theme_light', lang)}</option>
@@ -334,6 +232,103 @@ export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEd
           localize('editor.add_zone', lang),
           ['zone']
         )}
+
+        <hr />
+
+        <div class="section-header">
+          <h4>${localize('editor.external_services', lang)}</h4>
+        </div>
+
+        <ha-alert alert-type="warning" class="warning-alert">
+          ${localize('editor.warning_external_services', lang)}
+        </ha-alert>
+
+        <div>
+          <label class="checkbox-label">
+            <input type="checkbox"
+              .checked=${this._config.enable_geocoding === true}
+              @change=${(e: Event) => {
+                this._config = { ...this._config, enable_geocoding: (e.target as HTMLInputElement).checked };
+                this._fireConfigChanged();
+              }}
+            />
+            <span>${localize('editor.enable_geocoding', lang)}</span>
+          </label>
+          ${this._config.enable_geocoding === true ? html`
+            <p class="checkbox-description">
+              ${localize('editor.info_geocoding', lang)} <a href="https://nominatim.openstreetmap.org" target="_blank" rel="noopener noreferrer">https://nominatim.openstreetmap.org</a>
+            </p>
+          ` : ''}
+        </div>
+
+        <div>
+          <label class="checkbox-label">
+            <input type="checkbox"
+              .checked=${this._config.enable_routing === true}
+              @change=${(e: Event) => {
+                this._config = { ...this._config, enable_routing: (e.target as HTMLInputElement).checked };
+                this._fireConfigChanged();
+              }}
+            />
+            <span>${localize('editor.enable_routing', lang)}</span>
+          </label>
+
+          ${this._config.enable_routing === true ? html`
+            <div class="routing-settings-container">
+              <select
+                .value=${this._config.route_origin || 'device'}
+                @change=${(e: Event) => {
+                  this._config = { ...this._config, route_origin: (e.target as HTMLSelectElement).value };
+                  this._fireConfigChanged();
+                }}
+                class="form-select margin-bottom"
+              >
+                <option value="device" ?selected=${(this._config.route_origin || 'device') === 'device'}>
+                  ${localize('editor.origin_device', lang)}
+                </option>
+                ${Object.keys(this.hass.states)
+                  .filter(entityId => entityId.startsWith('zone.'))
+                  .map(entityId => {
+                    const stateObj = this.hass.states[entityId];
+                    const name = stateObj?.attributes?.friendly_name || entityId;
+                    return html`
+                      <option value="${entityId}" ?selected=${this._config.route_origin === entityId}>
+                        ${name}
+                      </option>
+                    `;
+                  })}
+              </select>
+
+              ${(this._config.route_origin || 'device') === 'device' ? html`
+                <p class="origin-device-info">
+                  ${localize('editor.info_origin_device', lang)}
+                </p>
+              ` : ''}
+
+              <select
+                .value=${this._config.routing_provider || DEFAULT_ROUTING_PROVIDER}
+                @change=${(e: Event) => {
+                  this._config = { ...this._config, routing_provider: (e.target as HTMLSelectElement).value };
+                  this._fireConfigChanged();
+                }}
+                class="form-select margin-bottom"
+              >
+                ${Object.values(ROUTING_PROVIDERS).map(provider => html`
+                  <option value="${provider.id}" ?selected=${(this._config.routing_provider || DEFAULT_ROUTING_PROVIDER) === provider.id}>
+                    ${localize(provider.nameKey, lang)}
+                  </option>
+                `)}
+              </select>
+
+              <p class="routing-provider-info">
+                ${localize('editor.info_routing', lang)}
+                <a href="${(ROUTING_PROVIDERS[this._config.routing_provider] || ROUTING_PROVIDERS[DEFAULT_ROUTING_PROVIDER])!.url}" target="_blank" rel="noopener noreferrer">
+                  ${(ROUTING_PROVIDERS[this._config.routing_provider] || ROUTING_PROVIDERS[DEFAULT_ROUTING_PROVIDER])!.url}
+                </a>
+              </p>
+            </div>
+          ` : ''}
+        </div>
       </div>
     `;
   }

@@ -7,8 +7,8 @@ vi.mock('leaflet', () => {
   };
 });
 
-describe('Map Providers', () => {
-  it('should return base maps', () => {
+describe('MapProviders', () => {
+  it('returns defined base map configurations', () => {
     const maps = getBaseMaps();
     expect(Object.keys(maps).length).toBeGreaterThan(0);
     expect(maps['OpenStreetMap DE']).toBeDefined();

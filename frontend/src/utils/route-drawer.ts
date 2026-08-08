@@ -29,10 +29,15 @@ export interface DrawRouteOptions {
   language: string;
   fallbackLat: number;
   fallbackLon: number;
+  routingProvider: string;
+  enableGeocoding: boolean;
+  enableRouting: boolean;
+  routeOrigin: string;
+  hass: any;
 }
 
 export function drawRouteOnMap(options: DrawRouteOptions): L.LatLngBounds | undefined {
-  const { points, map, routeLayer, isSatellite, isDarkMode, currentProvider, localize, language, fallbackLat, fallbackLon } = options;
+  const { points, map, routeLayer, isSatellite, isDarkMode, currentProvider, localize, language, fallbackLat, fallbackLon, routingProvider, enableGeocoding, enableRouting, routeOrigin, hass } = options;
 
   routeLayer.clearLayers();
 
@@ -83,14 +88,14 @@ export function drawRouteOnMap(options: DrawRouteOptions): L.LatLngBounds | unde
         iconAnchor: [12, 36],
         popupAnchor: [0, -36]
       });
-      L.marker(point.loc, { icon: currentIcon }).addTo(routeLayer).bindPopup(buildPopupContent(point, language, localize));
+      L.marker(point.loc, { icon: currentIcon }).addTo(routeLayer).bindPopup(buildPopupContent(point, language, localize, routingProvider, enableGeocoding, enableRouting, routeOrigin, hass));
     } else if (index === 0) {
       L.circleMarker(point.loc, {
         radius: 6,
         color: '#4caf50',
         fillColor: '#4caf50',
         fillOpacity: 1
-      }).addTo(routeLayer).bindPopup(buildPopupContent(point, language, localize));
+      }).addTo(routeLayer).bindPopup(buildPopupContent(point, language, localize, routingProvider, enableGeocoding, enableRouting, routeOrigin, hass));
     } else {
       const hitArea = L.circleMarker(point.loc, {
         radius: 12,
@@ -99,7 +104,7 @@ export function drawRouteOnMap(options: DrawRouteOptions): L.LatLngBounds | unde
         fillOpacity: 0,
         weight: 0,
         interactive: true
-      }).addTo(routeLayer).bindPopup(buildPopupContent(point, language, localize));
+      }).addTo(routeLayer).bindPopup(buildPopupContent(point, language, localize, routingProvider, enableGeocoding, enableRouting, routeOrigin, hass));
 
       L.circleMarker(point.loc, {
         radius: 3,

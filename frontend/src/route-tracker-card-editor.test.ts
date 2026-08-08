@@ -19,7 +19,7 @@ interface TestEntityState {
   attributes: Record<string, unknown>;
 }
 
-describe('route-tracker-card-editor', () => {
+describe('RouteTrackerCardEditor', () => {
   let editor: RouteTrackerCardEditor;
   let container: HTMLElement;
 
@@ -372,5 +372,100 @@ describe('route-tracker-card-editor', () => {
 
     const row = editor.shadowRoot?.querySelector('.entity-row');
     expect(row).not.toBeNull();
+  });
+
+  it('fires config-changed when enable_geocoding changes', async () => {
+    editor.setConfig({ enable_geocoding: false });
+    await editor.updateComplete;
+
+    let firedConfig: TestConfig = {} as TestConfig;
+    editor.addEventListener('config-changed', (e: Event) => {
+      firedConfig = (e as CustomEvent).detail.config as TestConfig;
+    });
+
+    const checkboxes = editor.shadowRoot?.querySelectorAll('input[type="checkbox"]');
+    expect(checkboxes?.length).toBeGreaterThan(0);
+    const geocodingCheckbox = checkboxes![0] as HTMLInputElement;
+    
+    geocodingCheckbox.checked = true;
+    geocodingCheckbox.dispatchEvent(new Event('change'));
+
+    expect((firedConfig as any).enable_geocoding).toBe(true);
+  });
+
+  it('fires config-changed when enable_routing changes', async () => {
+    editor.setConfig({ enable_routing: false });
+    await editor.updateComplete;
+
+    let firedConfig: TestConfig = {} as TestConfig;
+    editor.addEventListener('config-changed', (e: Event) => {
+      firedConfig = (e as CustomEvent).detail.config as TestConfig;
+    });
+
+    const checkboxes = editor.shadowRoot?.querySelectorAll('input[type="checkbox"]');
+    expect(checkboxes?.length).toBeGreaterThan(1);
+    const routingCheckbox = checkboxes![1] as HTMLInputElement;
+    
+    routingCheckbox.checked = true;
+    routingCheckbox.dispatchEvent(new Event('change'));
+
+    expect((firedConfig as any).enable_routing).toBe(true);
+  });
+
+  it('fires config-changed when route_origin changes', async () => {
+    editor.setConfig({ enable_routing: true, route_origin: 'device' });
+    Object.assign(editor.hass.states, {
+      'zone.home': { state: 'zoning', attributes: { friendly_name: 'Home' } } as TestEntityState
+    });
+    await editor.updateComplete;
+
+    let firedConfig: TestConfig = {} as TestConfig;
+    editor.addEventListener('config-changed', (e: Event) => {
+      firedConfig = (e as CustomEvent).detail.config as TestConfig;
+    });
+
+    const selects = editor.shadowRoot?.querySelectorAll('select');
+    const originSelect = selects![2] as HTMLSelectElement;
+    
+    originSelect.value = 'zone.home';
+    originSelect.dispatchEvent(new Event('change'));
+
+    expect((firedConfig as any).route_origin).toBe('zone.home');
+  });
+
+  it('fires config-changed when routing_provider changes', async () => {
+    editor.setConfig({ enable_routing: true, routing_provider: 'osm' });
+    await editor.updateComplete;
+
+    let firedConfig: TestConfig = {} as TestConfig;
+    editor.addEventListener('config-changed', (e: Event) => {
+      firedConfig = (e as CustomEvent).detail.config as TestConfig;
+    });
+
+    const selects = editor.shadowRoot?.querySelectorAll('select');
+    const providerSelect = selects![3] as HTMLSelectElement;
+    
+    providerSelect.value = 'google';
+    providerSelect.dispatchEvent(new Event('change'));
+
+    expect((firedConfig as any).routing_provider).toBe('google');
+  });
+
+  it('handles zones without friendly_name and invalid routing_provider gracefully', async () => {
+    editor.setConfig({ enable_routing: true, route_origin: 'device', routing_provider: 'invalid' });
+    Object.assign(editor.hass.states, {
+      'zone.no_name': { state: 'zoning', attributes: {} } as TestEntityState
+    });
+    await editor.updateComplete;
+
+    const selects = editor.shadowRoot?.querySelectorAll('select');
+    const originSelect = selects![2] as HTMLSelectElement;
+    
+    const options = originSelect.querySelectorAll('option');
+    const noNameOption = Array.from(options).find(opt => opt.value === 'zone.no_name');
+    expect(noNameOption?.textContent?.trim()).toBe('zone.no_name');
+
+    const providerLink = editor.shadowRoot?.querySelector('.routing-provider-info a') as HTMLAnchorElement;
+    expect(providerLink.href).toContain('openstreetmap');
   });
 });

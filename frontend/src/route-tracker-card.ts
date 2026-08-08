@@ -11,6 +11,7 @@ import { mapFiltersStyles } from './css/map-filters';
 import { uiControlsStyles } from './css/ui-controls';
 import { leafletOverridesStyles } from './css/leaflet-overrides';
 import { popupStyles } from './css/popup';
+import { popupRoutingStyles } from './css/popup-routing';
 
 import {
   getEligibleRouteEntities,
@@ -108,7 +109,8 @@ export class RouteTrackerCard extends LitElement {
     mapFiltersStyles,
     uiControlsStyles,
     leafletOverridesStyles,
-    popupStyles
+    popupStyles,
+    popupRoutingStyles
   ];
 
   public setConfig(config: any): void {
@@ -518,7 +520,12 @@ export class RouteTrackerCard extends LitElement {
       localize,
       language: this.hass.language,
       fallbackLat: this.hass.config.latitude || 0.0,
-      fallbackLon: this.hass.config.longitude || 0.0
+      fallbackLon: this.hass.config.longitude || 0.0,
+      routingProvider: this.config?.routing_provider || 'osm',
+      enableGeocoding: this.config?.enable_geocoding || false,
+      enableRouting: this.config?.enable_routing || false,
+      routeOrigin: this.config?.route_origin || 'device',
+      hass: this.hass
     });
 
     if (bounds) {

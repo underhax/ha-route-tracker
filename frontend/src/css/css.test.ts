@@ -4,8 +4,8 @@ import * as leafletOverrides from './leaflet-overrides';
 import * as mapFilters from './map-filters';
 import * as uiControls from './ui-controls';
 
-describe('CSS Module Exports', () => {
-  it('should have exports', () => {
+describe('CSSModules', () => {
+  it('exports defined CSSResult objects for all styles', () => {
     expect(Object.keys(cardLayout).length).toBeGreaterThan(0);
     expect(Object.keys(leafletOverrides).length).toBeGreaterThan(0);
     expect(Object.keys(mapFilters).length).toBeGreaterThan(0);

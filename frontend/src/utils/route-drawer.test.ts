@@ -2,8 +2,8 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import * as L from 'leaflet';
 import { calculateDistance, drawRouteOnMap, DrawRouteOptions, RoutePoint } from './route-drawer';
 
-describe('route-drawer', () => {
-  describe('calculateDistance', () => {
+describe('RouteDrawer', () => {
+  describe('calculateDistance()', () => {
     it('calculates distance correctly for known points', () => {
       const d = calculateDistance(0, 0, 1, 1);
       expect(d).toBeGreaterThan(0);
@@ -24,7 +24,7 @@ describe('route-drawer', () => {
     });
   });
 
-  describe('drawRouteOnMap', () => {
+  describe('drawRouteOnMap()', () => {
     let map: L.Map;
     let routeLayer: L.LayerGroup;
     let localize: any;
@@ -46,7 +46,12 @@ describe('route-drawer', () => {
         localize,
         language: 'en',
         fallbackLat: 10,
-        fallbackLon: 20
+        fallbackLon: 20,
+        routingProvider: 'osm',
+        enableGeocoding: false,
+        enableRouting: false,
+        routeOrigin: 'disabled',
+        hass: { states: {} }
       };
 
       if (!(window as any).L) {
@@ -75,7 +80,7 @@ describe('route-drawer', () => {
       expect(resultUndefined).toBeUndefined();
     });
 
-    it('draws single point', () => {
+    it('draws a single route point', () => {
       const points: RoutePoint[] = [
         { loc: L.latLng(0, 0), timestamp: 'time1' }
       ];
@@ -99,7 +104,7 @@ describe('route-drawer', () => {
       expect((window as any).L.polylineDecorator).toHaveBeenCalled();
     });
 
-    it('simulates click on hitArea bead', () => {
+    it('simulates a click on a hitArea bead', () => {
       const points: RoutePoint[] = [
         { loc: L.latLng(0, 0), timestamp: 'time1' },
         { loc: L.latLng(1, 1), timestamp: 'time2' },

@@ -19,8 +19,8 @@ const states: RouteTrackerStates = {
   },
 };
 
-describe('tracker eligibility', () => {
-  it('derives the virtual sensor entity ID from a device tracker', () => {
+describe('TrackerEligibility', () => {
+  it('derives the virtual sensor entity ID from a device tracker via toVirtualSensorId()', () => {
     expect(toVirtualSensorId('device_tracker.phone')).toBe(
       'sensor.virtual_device_tracker_phone'
     );
@@ -28,7 +28,7 @@ describe('tracker eligibility', () => {
     expect(toVirtualSensorId('invalid_entity_without_dot')).toBe('');
   });
 
-  it('allows only trackers selected by the integration', () => {
+  it('allows only trackers configured by the integration', () => {
     expect(isEligibleRouteEntity('device_tracker.phone', states)).toBe(true);
     expect(isEligibleRouteEntity('device_tracker.tablet', states)).toBe(false);
     expect(getRouteEntityEligibility('device_tracker.tablet', states)).toBe(
@@ -36,7 +36,7 @@ describe('tracker eligibility', () => {
     );
   });
 
-  it('requires a person to link a selected device tracker', () => {
+  it('requires a person entity to link to a configured device tracker', () => {
     expect(isEligibleRouteEntity('person.a', states)).toBe(false);
     expect(isEligibleRouteEntity('person.b', states)).toBe(false);
     expect(isEligibleRouteEntity('person.c', states)).toBe(true);
@@ -45,7 +45,7 @@ describe('tracker eligibility', () => {
     );
   });
 
-  it('uses only selected trackers when resolving a person route', () => {
+  it('uses only configured trackers when resolving a person route', () => {
     const personState = {
       attributes: {
         device_trackers: ['device_tracker.phone', 'device_tracker.tablet'],
@@ -57,11 +57,11 @@ describe('tracker eligibility', () => {
     ]);
   });
 
-  it('returns empty array when person has no device_trackers attribute', () => {
+  it('returns an empty array when the person entity lacks a device_trackers attribute', () => {
     expect(getSelectedTrackersForPerson({ attributes: {} }, states)).toEqual([]);
   });
 
-  it('returns the same eligible set for the default card list', () => {
+  it('returns the same eligible set of entities for the default card list', () => {
     expect(getEligibleRouteEntities(states).map(entity => entity.entityId)).toEqual([
       'device_tracker.phone',
       'person.c',

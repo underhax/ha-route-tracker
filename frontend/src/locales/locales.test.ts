@@ -6,8 +6,8 @@ import * as fr from './fr';
 import * as ru from './ru';
 import * as uk from './uk';
 
-describe('Locale Exports', () => {
-  it('should have exports', () => {
+describe('Locales', () => {
+  it('exports defined dictionary objects for all supported languages', () => {
     expect(Object.keys(de).length).toBeGreaterThan(0);
     expect(Object.keys(en).length).toBeGreaterThan(0);
     expect(Object.keys(es).length).toBeGreaterThan(0);
