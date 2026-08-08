@@ -53,7 +53,7 @@ Install Route Tracker through HACS or from a GitHub Release archive.
 
 <details><summary>Show instructions</summary>
 
-> [!NOTE]
+> Note:
 > The Home Assistant configuration directory contains `configuration.yaml`. Home Assistant OS and Home Assistant Container expose it as the `config` directory.
 
 1. Download `route_tracker.zip` from [GitHub Releases](https://github.com/underhax/ha-route-tracker/releases).
