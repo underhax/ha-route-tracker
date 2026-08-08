@@ -10,6 +10,7 @@ import { cardLayoutStyles } from './css/card-layout';
 import { mapFiltersStyles } from './css/map-filters';
 import { uiControlsStyles } from './css/ui-controls';
 import { leafletOverridesStyles } from './css/leaflet-overrides';
+import { popupStyles } from './css/popup';
 
 import {
   getEligibleRouteEntities,
@@ -106,7 +107,8 @@ export class RouteTrackerCard extends LitElement {
     cardLayoutStyles,
     mapFiltersStyles,
     uiControlsStyles,
-    leafletOverridesStyles
+    leafletOverridesStyles,
+    popupStyles
   ];
 
   public setConfig(config: any): void {

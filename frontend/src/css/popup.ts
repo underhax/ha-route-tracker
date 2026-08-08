@@ -1,0 +1,77 @@
+import { css } from 'lit';
+
+export const popupStyles = css`
+  .rt-popup-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 14px;
+  }
+  .rt-popup-title {
+    font-weight: bold;
+  }
+  .rt-popup-coords {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    white-space: nowrap;
+  }
+  .rt-popup-coords span {
+    font-family: monospace;
+  }
+  .rt-popup-copy-btn {
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    color: inherit;
+    display: flex;
+    align-items: center;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+  }
+  .rt-popup-divider {
+    height: 1px;
+    margin: 4px 0 0;
+    background: #d8d8d8;
+  }
+  .rt-popup-copy-btn:hover {
+    opacity: 1;
+  }
+  .rt-popup-copy-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+  .rt-popup-copy-btn.copied svg {
+    color: #4caf50;
+  }
+  .rt-popup-geocode-btn {
+    cursor: pointer;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--primary-color, #03a9f4);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    transition: opacity 0.2s;
+  }
+  .rt-popup-geocode-btn:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+  }
+  .rt-popup-geocode-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+  .rt-popup-address {
+    max-width: 280px;
+    white-space: normal;
+    line-height: 1.4;
+  }
+  .leaflet-popup-content {
+    margin: 16px !important;
+  }
+`;

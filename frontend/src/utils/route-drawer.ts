@@ -1,5 +1,6 @@
 import * as L from 'leaflet';
 import { markerSvg } from '../icons/marker';
+import { buildPopupContent } from './popup-builder';
 
 export interface RoutePoint {
   loc: L.LatLng;
@@ -82,14 +83,14 @@ export function drawRouteOnMap(options: DrawRouteOptions): L.LatLngBounds | unde
         iconAnchor: [12, 36],
         popupAnchor: [0, -36]
       });
-      L.marker(point.loc, { icon: currentIcon }).addTo(routeLayer).bindPopup(`<b>${localize('card.current_location', language)}</b><br>${point.timestamp}`);
+      L.marker(point.loc, { icon: currentIcon }).addTo(routeLayer).bindPopup(buildPopupContent(point, language, localize));
     } else if (index === 0) {
       L.circleMarker(point.loc, {
         radius: 6,
         color: '#4caf50',
         fillColor: '#4caf50',
         fillOpacity: 1
-      }).addTo(routeLayer).bindPopup(`<b>${localize('card.start', language)}</b><br>${point.timestamp}`);
+      }).addTo(routeLayer).bindPopup(buildPopupContent(point, language, localize));
     } else {
       const hitArea = L.circleMarker(point.loc, {
         radius: 12,
@@ -98,7 +99,7 @@ export function drawRouteOnMap(options: DrawRouteOptions): L.LatLngBounds | unde
         fillOpacity: 0,
         weight: 0,
         interactive: true
-      }).addTo(routeLayer).bindPopup(point.timestamp);
+      }).addTo(routeLayer).bindPopup(buildPopupContent(point, language, localize));
 
       L.circleMarker(point.loc, {
         radius: 3,
