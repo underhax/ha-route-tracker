@@ -37,10 +37,7 @@ Tested with:
 Install Route Tracker through HACS or from a GitHub Release archive.
 
 > [!CAUTION]
-> Do **not** install a GitHub source archive or clone the repository directly into `custom_components`.
->
->
-> Source code archives do not include the compiled frontend assets required by the Lovelace card and will not work.
+> Source code archives do not include the compiled frontend assets required by the Lovelace card and will not work. Do **not** install a GitHub source archive or clone the repository directly into `custom_components`.
 
 ### HACS (Recommended)
 

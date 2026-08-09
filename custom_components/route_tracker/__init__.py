@@ -8,7 +8,11 @@ from homeassistant.helpers.http import KEY_ALLOW_CONFIGURED_CORS
 from typing_extensions import override
 
 from .const import DOMAIN, LOGGER
-from .lovelace import async_register_resource, async_unregister_resource
+from .lovelace import (
+    async_register_resource,
+    async_unregister_resource,
+    compute_frontend_hash,
+)
 
 PLATFORMS = ["sensor"]
 FRONTEND_CACHE_CONTROL = "no-cache, max-age=0, must-revalidate"
@@ -43,7 +47,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
-    _ = hass.async_create_task(async_register_resource(hass))
+    www_dir = hass.config.path(f"custom_components/{DOMAIN}/www")
+    content_hash = await hass.async_add_executor_job(compute_frontend_hash, www_dir)
+    _ = hass.async_create_task(async_register_resource(hass, content_hash))
 
     LOGGER.info("Route Tracker initialized successfully")
     return True

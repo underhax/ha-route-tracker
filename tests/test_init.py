@@ -18,7 +18,7 @@ from custom_components.route_tracker import (
 async def test_async_setup_entry_registers_lovelace(
     hass: HomeAssistant,
 ) -> None:
-    """Test that setup calls lovelace registration."""
+    """Test that setup computes frontend hash and passes it to registration."""
     entry = MagicMock(spec=ConfigEntry)
 
     with (
@@ -27,10 +27,14 @@ async def test_async_setup_entry_registers_lovelace(
         ) as mock_register,
         patch("custom_components.route_tracker._register_static_path"),
         patch("homeassistant.config_entries.ConfigEntries.async_forward_entry_setups"),
+        patch(
+            "custom_components.route_tracker.compute_frontend_hash",
+            return_value="abc123def456",
+        ),
     ):
         _ = await async_setup_entry(hass, entry)
 
-        mock_register.assert_called_once_with(hass)
+        mock_register.assert_called_once_with(hass, "abc123def456")
 
 
 async def test_async_remove_entry_unregisters_lovelace(
@@ -77,6 +81,10 @@ async def test_register_static_path_indirect(hass: HomeAssistant) -> None:
         patch("custom_components.route_tracker.async_register_resource"),
         patch("homeassistant.config_entries.ConfigEntries.async_forward_entry_setups"),
         patch("custom_components.route_tracker.RouteTrackerStaticResource"),
+        patch(
+            "custom_components.route_tracker.compute_frontend_hash",
+            return_value="abc123def456",
+        ),
     ):
         _ = await async_setup_entry(hass, entry)
 
@@ -100,6 +108,10 @@ async def test_async_update_listener_indirect(hass: HomeAssistant) -> None:
         patch("custom_components.route_tracker.async_register_resource"),
         patch("custom_components.route_tracker._register_static_path"),
         patch("homeassistant.config_entries.ConfigEntries.async_forward_entry_setups"),
+        patch(
+            "custom_components.route_tracker.compute_frontend_hash",
+            return_value="abc123def456",
+        ),
     ):
         _ = await async_setup_entry(hass, entry)
 
