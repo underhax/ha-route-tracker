@@ -1,6 +1,6 @@
 # Route Tracker
 
-<img src="custom_components/route_tracker/brand/icon.png" width="100" height="100" alt="Route Tracker">
+<img src="https://raw.githubusercontent.com/underhax/ha-route-tracker/main/custom_components/route_tracker/brand/logo.png" width="100" height="100" alt="Route Tracker">
 
 Route Tracker is a Home Assistant custom integration and Lovelace card for viewing daily routes from selected `device_tracker` entities. It creates event-driven virtual sensors for selected device trackers so GPS attribute updates are retained by the Home Assistant Recorder, then renders the recorded route on a map.
 
@@ -37,7 +37,9 @@ Tested with:
 Install Route Tracker through HACS or from a GitHub Release archive.
 
 > [!CAUTION]
-> Do **not** install a GitHub source archive or clone the repository directly into `custom_components`. Source code archives do not include the compiled frontend assets required by the Lovelace card and will not work.
+> Do **not** install a GitHub source archive or clone the repository directly into `custom_components`.
+>
+> Source code archives do not include the compiled frontend assets required by the Lovelace card and will not work.
 
 ### HACS (Recommended)
 
@@ -99,6 +101,13 @@ The integration threshold is applied before the virtual sensor is updated. It ac
 </details>
 
 ## Lovelace card
+
+<a href="https://raw.githubusercontent.com/underhax/ha-route-tracker/main/.github/demo/demo.avif" target="_blank">
+  <picture>
+    <source srcset="https://raw.githubusercontent.com/underhax/ha-route-tracker/main/.github/demo/demo.avif" type="image/avif">
+    <img src="https://raw.githubusercontent.com/underhax/ha-route-tracker/main/.github/demo/demo.webp" width="350" alt="Route Tracker Demo">
+  </picture>
+</a>
 
 ### Add the resource
 
