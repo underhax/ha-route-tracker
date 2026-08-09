@@ -39,6 +39,7 @@ Install Route Tracker through HACS or from a GitHub Release archive.
 > [!CAUTION]
 > Do **not** install a GitHub source archive or clone the repository directly into `custom_components`.
 >
+>
 > Source code archives do not include the compiled frontend assets required by the Lovelace card and will not work.
 
 ### HACS (Recommended)
@@ -102,12 +103,9 @@ The integration threshold is applied before the virtual sensor is updated. It ac
 
 ## Lovelace card
 
-<a href="https://raw.githubusercontent.com/underhax/ha-route-tracker/main/.github/demo/demo.avif" target="_blank">
-  <picture>
-    <source srcset="https://raw.githubusercontent.com/underhax/ha-route-tracker/main/.github/demo/demo.avif" type="image/avif">
-    <img src="https://raw.githubusercontent.com/underhax/ha-route-tracker/main/.github/demo/demo.webp" width="350" alt="Route Tracker Demo">
-  </picture>
-</a>
+| Static Preview | Animated Demo (AVIF) |
+| :---: | :---: |
+| <a href="https://raw.githubusercontent.com/underhax/ha-route-tracker/main/.github/demo/demo.webp" target="_blank"><img src="https://raw.githubusercontent.com/underhax/ha-route-tracker/main/.github/demo/demo.webp" width="350" alt="Static Preview"></a> | <a href="https://raw.githubusercontent.com/underhax/ha-route-tracker/main/.github/demo/demo.avif" target="_blank"><img src="https://raw.githubusercontent.com/underhax/ha-route-tracker/main/.github/demo/demo.avif" width="350" alt="Animated Demo (Modern Browser Required)"></a> |
 
 ### Add the resource
 
