@@ -12,7 +12,11 @@ from custom_components.route_tracker.const import (
     DEFAULT_MINIMAL_DISTANCE,
     DOMAIN,
 )
-from custom_components.route_tracker.sensor import RouteTrackerSensor, async_setup_entry
+from custom_components.route_tracker.sensor import (
+    RouteTrackerSensor,
+    async_setup_entry,
+    extract_extra_attributes,
+)
 
 
 def test_sensor_uses_custom_friendly_name(hass: HomeAssistant) -> None:
@@ -183,3 +187,36 @@ async def test_sensor_lifecycle_and_state_changes(hass: HomeAssistant) -> None:
 
     await sensor_missing.async_will_remove_from_hass()
     await sensor_bad.async_will_remove_from_hass()
+
+
+def test_extract_extra_attributes() -> None:
+    """Test extraction of optional GPS attributes."""
+    attrs = {
+        "source_type": "gps",
+        "gps_accuracy": 15,
+        "altitude": 100.5,
+        "speed": 60,
+    }
+    extracted = extract_extra_attributes(attrs)
+    assert extracted == {
+        "source_type": "gps",
+        "gps_accuracy": 15.0,
+        "altitude": 100.5,
+        "speed": 60.0,
+    }
+
+    invalid_attrs = {
+        "source_type": "unknown",
+        "gps_accuracy": 0,
+        "altitude": "invalid",
+        "speed": None,
+    }
+    assert extract_extra_attributes(invalid_attrs) == {}
+
+    zero_attrs = {
+        "source_type": "   ",
+        "gps_accuracy": 0.0,
+        "altitude": 0.0,
+        "speed": 0.0,
+    }
+    assert extract_extra_attributes(zero_attrs) == {}

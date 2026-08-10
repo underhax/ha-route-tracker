@@ -5,6 +5,10 @@ import { buildPopupContent } from './popup-builder';
 export interface RoutePoint {
   loc: L.LatLng;
   timestamp: string;
+  source_type?: string;
+  gps_accuracy?: number;
+  altitude?: number;
+  speed?: number;
 }
 
 export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {

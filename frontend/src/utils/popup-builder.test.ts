@@ -27,7 +27,7 @@ describe('buildPopupContent()', () => {
   it('constructs popup DOM and handles clipboard copy operations', async () => {
     const popup = buildPopupContent(point as any, 'en', mockLocalize);
     expect(popup.querySelector('.rt-popup-time')?.textContent).toBe('1970-01-01 00:00:00');
-    
+
     const coordsSpan = popup.querySelector('.rt-popup-coords span');
     expect(coordsSpan?.textContent).toBe('0.00000, 0.00000');
 
@@ -35,7 +35,7 @@ describe('buildPopupContent()', () => {
     expect(copyBtn).toBeDefined();
 
     await copyBtn.onclick!(new MouseEvent('click') as any);
-    
+
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith('0.00000,0.00000');
     expect(copyBtn.innerHTML).toContain('M21,7L9,19');
     expect(copyBtn.classList.contains('copied')).toBe(true);
@@ -43,6 +43,94 @@ describe('buildPopupContent()', () => {
     vi.runAllTimers();
     expect(copyBtn.innerHTML).toContain('M19,21H8V7');
     expect(copyBtn.classList.contains('copied')).toBe(false);
+  });
+
+  it('renders extra attributes when provided', () => {
+    const pointWithExtra = {
+      loc: { lat: 0, lng: 0 },
+      timestamp: '1970-01-01 00:00:00',
+      source_type: 'gps',
+      gps_accuracy: 10,
+      altitude: 100.5,
+      speed: 60
+    };
+    const popup = buildPopupContent(pointWithExtra as any, 'en', mockLocalize);
+    const extraAttrs = popup.querySelector('.rt-popup-extra-attrs');
+
+    expect(extraAttrs).toBeDefined();
+    expect(extraAttrs?.innerHTML).toContain('title="translated_card.source_type: gps"');
+    expect(extraAttrs?.innerHTML).toContain('title="translated_card.gps_accuracy: 10 translated_card.unit_m"');
+    expect(extraAttrs?.innerHTML).toContain('title="translated_card.altitude: 100.5 translated_card.unit_m"');
+    expect(extraAttrs?.innerHTML).toContain('title="translated_card.speed: 60 translated_card.unit_kmh"');
+  });
+
+  it('uses default fallback labels for extra attributes if translation is missing', () => {
+    const emptyLocalize = vi.fn(() => '');
+    const pointWithExtra = {
+      loc: { lat: 0, lng: 0 },
+      timestamp: '1970-01-01 00:00:00',
+      source_type: 'gps',
+      gps_accuracy: 10,
+      altitude: 100.5,
+      speed: 60
+    };
+    const popup = buildPopupContent(pointWithExtra as any, 'en', emptyLocalize);
+    const extraAttrs = popup.querySelector('.rt-popup-extra-attrs');
+
+    expect(extraAttrs).toBeDefined();
+    expect(extraAttrs?.innerHTML).toContain('title="Source: gps"');
+    expect(extraAttrs?.innerHTML).toContain('title="Accuracy: 10 m"');
+    expect(extraAttrs?.innerHTML).toContain('title="Altitude: 100.5 m"');
+    expect(extraAttrs?.innerHTML).toContain('title="Speed: 60 km/h"');
+  });
+
+  it('renders extra attributes using US customary units when hass config is imperial', () => {
+    const mockHassImperial = {
+      config: {
+        unit_system: {
+          length: 'mi'
+        }
+      }
+    };
+    const pointWithExtra = {
+      loc: { lat: 0, lng: 0 },
+      timestamp: '1970-01-01 00:00:00',
+      source_type: 'gps',
+      gps_accuracy: 10,
+      altitude: 100.5,
+      speed: 60
+    };
+    const popup = buildPopupContent(pointWithExtra as any, 'en', mockLocalize, 'osm', false, false, 'device', mockHassImperial);
+    const extraAttrs = popup.querySelector('.rt-popup-extra-attrs');
+
+    expect(extraAttrs).toBeDefined();
+    expect(extraAttrs?.innerHTML).toContain('title="translated_card.altitude: 100.5 translated_card.unit_ft"');
+    expect(extraAttrs?.innerHTML).toContain('title="translated_card.speed: 60 translated_card.unit_mph"');
+  });
+
+  it('uses default fallback labels for US customary units if translation is missing', () => {
+    const emptyLocalize = vi.fn(() => '');
+    const mockHassImperial = {
+      config: {
+        unit_system: {
+          length: 'mi'
+        }
+      }
+    };
+    const pointWithExtra = {
+      loc: { lat: 0, lng: 0 },
+      timestamp: '1970-01-01 00:00:00',
+      source_type: 'gps',
+      gps_accuracy: 10,
+      altitude: 100.5,
+      speed: 60
+    };
+    const popup = buildPopupContent(pointWithExtra as any, 'en', emptyLocalize, 'osm', false, false, 'device', mockHassImperial);
+    const extraAttrs = popup.querySelector('.rt-popup-extra-attrs');
+
+    expect(extraAttrs).toBeDefined();
+    expect(extraAttrs?.innerHTML).toContain('title="Altitude: 100.5 ft"');
+    expect(extraAttrs?.innerHTML).toContain('title="Speed: 60 mph"');
   });
 
   it('processes successful geocoding responses and updates DOM', async () => {
@@ -53,9 +141,9 @@ describe('buildPopupContent()', () => {
     expect(geocodeBtn).toBeDefined();
 
     await geocodeBtn.onclick!(new MouseEvent('click') as any);
-    
+
     expect(fetchSpy).toHaveBeenCalledWith(0, 0, 'en');
-    
+
     const addressEl = popup.querySelector('.rt-popup-address');
     expect(addressEl).toBeDefined();
     expect(addressEl?.textContent).toBe('Mocked Address, City');
@@ -65,7 +153,7 @@ describe('buildPopupContent()', () => {
   it('renders routing button with default OSM provider', () => {
     const popup = buildPopupContent(point as any, 'en', mockLocalize, 'osm', true, true, 'device');
     const routeBtn = popup.querySelector('.rt-popup-route-btn') as HTMLAnchorElement;
-    
+
     expect(routeBtn).toBeDefined();
     expect(routeBtn.href).toBe('https://www.openstreetmap.org/directions?to=0,0');
     expect(routeBtn.target).toBe('_blank');
@@ -75,7 +163,7 @@ describe('buildPopupContent()', () => {
   it('renders routing button with specified provider', () => {
     const popup = buildPopupContent(point as any, 'en', mockLocalize, 'google', true, true, 'device');
     const routeBtn = popup.querySelector('.rt-popup-route-btn') as HTMLAnchorElement;
-    
+
     expect(routeBtn).toBeDefined();
     expect(routeBtn.href).toBe('https://www.google.com/maps/dir/?api=1&destination=0,0');
   });
@@ -85,27 +173,27 @@ describe('buildPopupContent()', () => {
     const popup = buildPopupContent(point as any, 'en', mockLocalize, 'osm', true, true, 'device');
 
     const geocodeBtn = popup.querySelector('.rt-popup-geocode-btn') as HTMLButtonElement;
-    
+
     await geocodeBtn.onclick!(new MouseEvent('click') as any);
-    
+
     expect(fetchSpy).toHaveBeenCalled();
-    
+
     expect(geocodeBtn.disabled).toBe(false);
     expect(geocodeBtn.style.opacity).toBe('1');
-    
+
     expect(popup.querySelector('.rt-popup-address')).toBeNull();
   });
 
   it('applies default English labels when localization keys are missing', () => {
     const emptyLocalize = vi.fn(() => '');
     const popup = buildPopupContent(point as any, 'en', emptyLocalize, 'osm', true, true, 'device');
-    
+
     const copyBtn = popup.querySelector('.rt-popup-copy-btn') as HTMLButtonElement;
     expect(copyBtn.title).toBe('Copy coordinates');
 
     const geocodeBtn = popup.querySelector('.rt-popup-geocode-btn') as HTMLButtonElement;
     expect(geocodeBtn.textContent).toBe('Get Address');
-    
+
     const routeBtn = popup.querySelector('.rt-popup-route-btn') as HTMLAnchorElement;
     expect(routeBtn.textContent).toBe('Build Route');
   });

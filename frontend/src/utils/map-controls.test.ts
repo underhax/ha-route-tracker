@@ -8,10 +8,10 @@ describe('MapControls', () => {
     it('creates control and triggers onReset on click', () => {
       const onReset = vi.fn();
       const control = createResetControl(localize, 'en', onReset);
-      
+
       const container = (control as any).options ? (control as any).onAdd() : undefined;
       expect(container).toBeDefined();
-      
+
       const link = container.querySelector('a');
       expect(link).toBeDefined();
       expect(link?.title).toBe('translated_card.reset_view');
@@ -30,7 +30,7 @@ describe('MapControls', () => {
     it('creates control and toggles theme', () => {
       let isSatellite = false;
       let isDark = false;
-      
+
       const getIsSatellite = vi.fn(() => isSatellite);
       const getIsDarkMode = vi.fn(() => isDark);
       const onToggleTheme = vi.fn();
@@ -38,7 +38,7 @@ describe('MapControls', () => {
       const control = createThemeControl(localize, 'en', getIsSatellite, getIsDarkMode, onToggleTheme);
       const container = (control as any).onAdd();
       expect(container).toBeDefined();
-      
+
       const link = container.querySelector('a');
       expect(link?.title).toBe('translated_card.toggle_theme');
 
@@ -56,7 +56,7 @@ describe('MapControls', () => {
       isDark = true;
       (container as any).updateThemeIcon();
       expect(container.style.display).toBe('block');
-      
+
       const moon = link?.querySelector('.theme-moon') as HTMLElement;
       expect(moon).toBeDefined();
       expect(moon?.style.opacity).toBe('1');
@@ -75,7 +75,7 @@ describe('MapControls', () => {
       event.preventDefault = vi.fn();
       event.stopPropagation = vi.fn();
       link?.onclick?.(event as any);
-      
+
       expect(onToggleTheme).not.toHaveBeenCalled();
     });
 

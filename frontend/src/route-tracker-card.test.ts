@@ -763,7 +763,9 @@ describe('RouteTrackerCard', () => {
       } as any;
       mockHass.states['sensor.virtual_device_tracker_phone'] = {
         entity_id: 'sensor.virtual_device_tracker_phone',
-        state: 'home'
+        state: 'home',
+        attributes: { latitude: 21, longitude: 21 },
+        last_updated: '1970-01-01T12:15:00Z'
       } as any;
 
       card.setConfig({ entities: [{ entity: 'person.john' }] });
@@ -778,9 +780,14 @@ describe('RouteTrackerCard', () => {
       expect(mockHass.callApi).toHaveBeenCalled();
       const callArgs = (mockHass.callApi as any).mock.calls[0];
       expect(callArgs[1]).not.toContain('person.john');
-      expect(callArgs[1]).toContain('device_tracker.phone');
+      expect(callArgs[1]).not.toContain('device_tracker.phone');
       expect(callArgs[1]).toContain('sensor.virtual_device_tracker_phone');
-      expect(mockHass.callApi).toHaveBeenCalledWith('GET', expect.stringContaining('sensor.virtual_device_tracker_phone'));
+      expect(mockHass.callApi).toHaveBeenCalledWith('GET', expect.stringContaining('filter_entity_id=sensor.virtual_device_tracker_phone'));
+
+      const points = (card as any)._lastPoints;
+      expect(points.length).toBeGreaterThan(0);
+      expect(points[points.length - 1].loc.lat).toBe(21);
+      expect(points[points.length - 1].loc.lng).toBe(21);
     });
 
     it('filters out points based on minimal_distance', async () => {
@@ -846,6 +853,35 @@ describe('RouteTrackerCard', () => {
       expect(points.length).toBe(1);
 
       (card as any).toggleManualTheme();
+    });
+
+    it('handles person with no virtual sensors gracefully', async () => {
+      mockHass.callApi = vi.fn().mockResolvedValue([]);
+      mockHass.states['person.jane'] = {
+        entity_id: 'person.jane',
+        state: 'home',
+        attributes: { device_trackers: ['device_tracker.laptop'], latitude: 30, longitude: 30 },
+        last_updated: '1970-01-01T12:00:00Z'
+      } as any;
+      mockHass.states['device_tracker.laptop'] = {
+        entity_id: 'device_tracker.laptop',
+        state: 'home',
+        attributes: { latitude: 30, longitude: 30 },
+        last_updated: '1970-01-01T12:10:00Z'
+      } as any;
+
+      card.setConfig({ entities: [{ entity: 'person.jane' }] });
+      await card.updateComplete;
+
+      (card as any).selectedDevice = 'person.jane';
+      (card as any).selectedDate = '1970-01-01';
+      await card.updateComplete;
+
+      await new Promise(resolve => setTimeout(resolve, 150));
+
+      const points = (card as any)._lastPoints;
+      expect(points.length).toBeGreaterThan(0);
+      expect(points[points.length - 1].loc.lat).toBe(30);
     });
 
     it('handles map control clicks (reset and theme toggle)', async () => {

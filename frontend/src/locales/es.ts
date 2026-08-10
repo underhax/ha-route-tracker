@@ -45,4 +45,12 @@ export const es = {
   'card.copy_coords': 'Copiar coordenadas',
   'card.copied': '¡Copiado!',
   'card.build_route': 'Crear ruta',
+  'card.source_type': 'Fuente',
+  'card.gps_accuracy': 'Precisión',
+  'card.altitude': 'Altitud',
+  'card.speed': 'Velocidad',
+  'card.unit_m': 'm',
+  'card.unit_kmh': 'km/h',
+  'card.unit_ft': 'ft',
+  'card.unit_mph': 'mph',
 };

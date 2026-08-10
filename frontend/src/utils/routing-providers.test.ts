@@ -17,7 +17,7 @@ describe('RoutingProviders', () => {
   it('builds the OpenStreetMap URL correctly', () => {
     const url = ROUTING_PROVIDERS['osm']!.buildUrl(0.0, 0.0);
     expect(url).toBe('https://www.openstreetmap.org/directions?to=0,0');
-    
+
     const urlWithOrigin = ROUTING_PROVIDERS['osm']!.buildUrl(0.0, 0.0, 1.1, 2.2);
     expect(urlWithOrigin).toBe('https://www.openstreetmap.org/directions?route=1.1,2.2;0,0');
   });

@@ -45,4 +45,12 @@ export const ru = {
   'card.copy_coords': 'Скопировать координаты',
   'card.copied': 'Скопировано!',
   'card.build_route': 'Построить маршрут',
+  'card.source_type': 'Источник',
+  'card.gps_accuracy': 'Точность',
+  'card.altitude': 'Высота',
+  'card.speed': 'Скорость',
+  'card.unit_m': 'м',
+  'card.unit_kmh': 'км/ч',
+  'card.unit_ft': 'фут',
+  'card.unit_mph': 'миль/ч',
 };

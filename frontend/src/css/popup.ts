@@ -20,6 +20,35 @@ export const popupStyles = css`
   .rt-popup-coords span {
     font-family: monospace;
   }
+  .rt-popup-extra-attrs {
+    display: flex;
+    gap: 6px 16px;
+    justify-content: flex-start;
+    padding-top: 10px;
+    border-top: 1px solid #d8d8d8;
+    font-family: monospace;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.4;
+    color: #333333;
+    margin-top: 2px;
+  }
+  .rt-popup-attr {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #333333;
+  }
+  .rt-popup-attr svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+    opacity: 0.5;
+    flex-shrink: 0;
+  }
+  .rt-popup-attr-value {
+    white-space: nowrap;
+  }
   .rt-popup-copy-btn {
     cursor: pointer;
     background: none;

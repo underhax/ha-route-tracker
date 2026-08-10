@@ -41,4 +41,12 @@ export const fr = {
   'card.copy_coords': 'Copier les coordonnées',
   'card.copied': 'Copié!',
   'card.build_route': 'Itinéraire',
+  'card.source_type': 'Source',
+  'card.gps_accuracy': 'Précision',
+  'card.altitude': 'Altitude',
+  'card.speed': 'Vitesse',
+  'card.unit_m': 'm',
+  'card.unit_kmh': 'km/h',
+  'card.unit_ft': 'pi',
+  'card.unit_mph': 'mi/h',
 };

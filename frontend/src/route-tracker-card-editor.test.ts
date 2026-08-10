@@ -330,7 +330,7 @@ describe('RouteTrackerCardEditor', () => {
 
     const dummyTarget = document.createElement('div');
     methods._onDragLeave({ target: dummyTarget } as unknown as DragEvent);
-    
+
     expect(dummyTarget.classList.contains('drag-over')).toBe(false);
 
     const overTarget = document.createElement('div');
@@ -339,19 +339,19 @@ describe('RouteTrackerCardEditor', () => {
 
     methods._onDragStart(0, 'entities', { target: dummyTarget } as unknown as DragEvent);
     methods._onDragOver({ preventDefault: () => {}, target: dummyTarget } as unknown as DragEvent);
-    
+
     overTarget.classList.add('drag-over');
     methods._onDragEnd({ target: dummyTarget } as unknown as DragEvent);
-    
+
     overTarget.remove();
   });
 
   it('renders zones without errors', async () => {
-    editor.setConfig({ 
-      map_provider: 'osm_default', 
-      theme_mode: 'auto', 
-      entities: [], 
-      zones: [{ entity: 'zone.home', name: 'Home' }] 
+    editor.setConfig({
+      map_provider: 'osm_default',
+      theme_mode: 'auto',
+      entities: [],
+      zones: [{ entity: 'zone.home', name: 'Home' }]
     });
     await editor.updateComplete;
 
@@ -362,11 +362,11 @@ describe('RouteTrackerCardEditor', () => {
   });
 
   it('renders entity without entity string', async () => {
-    editor.setConfig({ 
-      map_provider: 'osm_default', 
-      theme_mode: 'auto', 
-      entities: [{ name: 'Missing Entity String' } as unknown as RouteEntityConfig], 
-      zones: [] 
+    editor.setConfig({
+      map_provider: 'osm_default',
+      theme_mode: 'auto',
+      entities: [{ name: 'Missing Entity String' } as unknown as RouteEntityConfig],
+      zones: []
     });
     await editor.updateComplete;
 
@@ -386,7 +386,7 @@ describe('RouteTrackerCardEditor', () => {
     const checkboxes = editor.shadowRoot?.querySelectorAll('input[type="checkbox"]');
     expect(checkboxes?.length).toBeGreaterThan(0);
     const geocodingCheckbox = checkboxes![0] as HTMLInputElement;
-    
+
     geocodingCheckbox.checked = true;
     geocodingCheckbox.dispatchEvent(new Event('change'));
 
@@ -405,7 +405,7 @@ describe('RouteTrackerCardEditor', () => {
     const checkboxes = editor.shadowRoot?.querySelectorAll('input[type="checkbox"]');
     expect(checkboxes?.length).toBeGreaterThan(1);
     const routingCheckbox = checkboxes![1] as HTMLInputElement;
-    
+
     routingCheckbox.checked = true;
     routingCheckbox.dispatchEvent(new Event('change'));
 
@@ -426,7 +426,7 @@ describe('RouteTrackerCardEditor', () => {
 
     const selects = editor.shadowRoot?.querySelectorAll('select');
     const originSelect = selects![2] as HTMLSelectElement;
-    
+
     originSelect.value = 'zone.home';
     originSelect.dispatchEvent(new Event('change'));
 
@@ -444,7 +444,7 @@ describe('RouteTrackerCardEditor', () => {
 
     const selects = editor.shadowRoot?.querySelectorAll('select');
     const providerSelect = selects![3] as HTMLSelectElement;
-    
+
     providerSelect.value = 'google';
     providerSelect.dispatchEvent(new Event('change'));
 
@@ -460,7 +460,7 @@ describe('RouteTrackerCardEditor', () => {
 
     const selects = editor.shadowRoot?.querySelectorAll('select');
     const originSelect = selects![2] as HTMLSelectElement;
-    
+
     const options = originSelect.querySelectorAll('option');
     const noNameOption = Array.from(options).find(opt => opt.value === 'zone.no_name');
     expect(noNameOption?.textContent?.trim()).toBe('zone.no_name');

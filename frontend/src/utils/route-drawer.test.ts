@@ -16,7 +16,7 @@ describe('RouteDrawer', () => {
         const lon1 = (Math.random() * 360) - 180;
         const lat2 = (Math.random() * 180) - 90;
         const lon2 = (Math.random() * 360) - 180;
-        
+
         const dist = calculateDistance(lat1, lon1, lat2, lon2);
         expect(dist).not.toBeNaN();
         expect(dist).toBeGreaterThanOrEqual(0);
@@ -35,7 +35,7 @@ describe('RouteDrawer', () => {
       map = L.map('map');
       routeLayer = L.layerGroup();
       localize = vi.fn((key: string) => `trans_${key}`);
-      
+
       baseOptions = {
         points: [],
         map,
@@ -68,14 +68,14 @@ describe('RouteDrawer', () => {
 
     it('handles zero or invalid points', () => {
       const setViewSpy = vi.spyOn(map, 'setView');
-      
+
       const result = drawRouteOnMap(baseOptions);
       expect(result).toBeUndefined();
       expect(setViewSpy).toHaveBeenCalledWith([10, 20], 19);
 
       const resultNull = drawRouteOnMap({ ...baseOptions, points: null as any });
       expect(resultNull).toBeUndefined();
-      
+
       const resultUndefined = drawRouteOnMap({ ...baseOptions, points: undefined as any });
       expect(resultUndefined).toBeUndefined();
     });
@@ -95,12 +95,12 @@ describe('RouteDrawer', () => {
         { loc: L.latLng(1, 1), timestamp: 'time2' },
         { loc: L.latLng(2, 2), timestamp: 'time3' }
       ];
-      
+
       drawRouteOnMap({ ...baseOptions, points, isSatellite: true });
       drawRouteOnMap({ ...baseOptions, points, isSatellite: false, isDarkMode: true, currentProvider: 'CartoDB Voyager' });
       drawRouteOnMap({ ...baseOptions, points, isSatellite: false, isDarkMode: true, currentProvider: 'OpenStreetMap' });
       drawRouteOnMap({ ...baseOptions, points, isSatellite: false, isDarkMode: false, currentProvider: 'OpenStreetMap' });
-      
+
       expect((window as any).L.polylineDecorator).toHaveBeenCalled();
     });
 
@@ -110,9 +110,9 @@ describe('RouteDrawer', () => {
         { loc: L.latLng(1, 1), timestamp: 'time2' },
         { loc: L.latLng(2, 2), timestamp: 'time3' }
       ];
-      
+
       drawRouteOnMap({ ...baseOptions, points });
-      
+
       const layers = routeLayer.getLayers();
       layers.forEach((layer: any) => {
         if (layer.fire) {
@@ -120,14 +120,14 @@ describe('RouteDrawer', () => {
         }
       });
     });
-    
+
     it('handles missing polylineDecorator', () => {
       const points: RoutePoint[] = [
         { loc: L.latLng(0, 0), timestamp: 'time1' },
         { loc: L.latLng(1, 1), timestamp: 'time2' }
       ];
       delete (window as any).L.polylineDecorator;
-      
+
       expect(() => {
         drawRouteOnMap({ ...baseOptions, points });
       }).not.toThrow();

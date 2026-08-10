@@ -47,6 +47,31 @@ def _haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return 2 * 6371 * asin(sqrt(a))
 
 
+def extract_extra_attributes(attributes: Mapping[str, object]) -> dict[str, object]:
+    """Extract optional attributes safely."""
+    extra: dict[str, object] = {}
+
+    source_type = attributes.get("source_type")
+    if (
+        isinstance(source_type, str)
+        and source_type.strip()
+        and source_type != "unknown"
+    ):
+        extra["source_type"] = source_type
+
+    for key in ("gps_accuracy", "altitude", "speed"):
+        val = attributes.get(key)
+        if val is not None:
+            try:
+                val_f = float(str(val))
+                if val_f != 0.0:
+                    extra[key] = val_f
+            except (ValueError, TypeError):
+                pass
+
+    return extra
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -194,6 +219,7 @@ class RouteTrackerSensor(SensorEntity):
             ATTR_LATITUDE: lat_f,
             ATTR_LONGITUDE: lon_f,
             "source_entity": self._source_entity_id,
+            **extract_extra_attributes(new_state.attributes),
         }
         self.async_write_ha_state()
 
@@ -219,4 +245,5 @@ class RouteTrackerSensor(SensorEntity):
                 ATTR_LATITUDE: lat_f,
                 ATTR_LONGITUDE: lon_f,
                 "source_entity": self._source_entity_id,
+                **extract_extra_attributes(source.attributes),
             }

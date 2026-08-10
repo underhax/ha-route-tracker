@@ -442,12 +442,12 @@ export class RouteTrackerCard extends LitElement {
         sourceIds = getSelectedTrackersForPerson(selectedState, this.hass.states);
       }
 
-      const virtualIds = sourceIds.map(toVirtualSensorId);
-      const allIds = [...sourceIds, ...virtualIds];
+      const virtualIds = sourceIds.map(toVirtualSensorId).filter(id => id && this.hass.states[id] !== undefined);
+      const queryIds = virtualIds.length > 0 ? virtualIds : sourceIds;
 
       const startStr = start.toISOString();
       const endStr = end.toISOString();
-      const entityIdsStr = allIds.join(',');
+      const entityIdsStr = queryIds.join(',');
 
       const result = await this.hass.callApi<any[][]>(
         'GET',
@@ -473,30 +473,57 @@ export class RouteTrackerCard extends LitElement {
         const loc = this.resolveLocation(state);
         if (loc) {
           const timeStr = new Date(state.last_updated).toLocaleString();
+          const point: RoutePoint = {
+            loc: L.latLng(loc[0], loc[1]),
+            timestamp: timeStr,
+            source_type: state.attributes?.['source_type'],
+            gps_accuracy: state.attributes?.['gps_accuracy'],
+            altitude: state.attributes?.['altitude'],
+            speed: state.attributes?.['speed']
+          };
           if (!lastLoc) {
-            points.push({ loc: L.latLng(loc[0], loc[1]), timestamp: timeStr });
+            points.push(point);
             lastLoc = loc;
           } else {
             const dist = calculateDistance(lastLoc[0], lastLoc[1], loc[0], loc[1]);
 
             if (dist > minDistance) {
-              points.push({ loc: L.latLng(loc[0], loc[1]), timestamp: timeStr });
+              points.push(point);
               lastLoc = loc;
             }
           }
         }
       });
 
-      const currentState = this.hass.states[this.selectedDevice];
+      const virtualSensorId = toVirtualSensorId(this.selectedDevice);
+      let currentState = this.hass.states[this.selectedDevice];
+
+      if (virtualSensorId && this.hass.states[virtualSensorId]) {
+        currentState = this.hass.states[virtualSensorId];
+      } else if (this.selectedDevice.startsWith('person.')) {
+        const firstQueryId = queryIds[0];
+        if (firstQueryId && firstQueryId.startsWith('sensor.virtual_device_tracker_')) {
+          currentState = this.hass.states[firstQueryId];
+        }
+      }
+
       const currentLoc = this.resolveLocation(currentState);
       if (currentState && currentLoc) {
         const timeStr = new Date(currentState.last_updated).toLocaleString();
+        const point: RoutePoint = {
+          loc: L.latLng(currentLoc[0], currentLoc[1]),
+          timestamp: timeStr,
+          source_type: currentState.attributes?.['source_type'],
+          gps_accuracy: currentState.attributes?.['gps_accuracy'],
+          altitude: currentState.attributes?.['altitude'],
+          speed: currentState.attributes?.['speed']
+        };
         if (!lastLoc) {
-          points.push({ loc: L.latLng(currentLoc[0], currentLoc[1]), timestamp: timeStr });
+          points.push(point);
         } else {
           const dist = calculateDistance(lastLoc[0], lastLoc[1], currentLoc[0], currentLoc[1]);
           if (dist > minDistance) {
-            points.push({ loc: L.latLng(currentLoc[0], currentLoc[1]), timestamp: timeStr });
+            points.push(point);
           }
         }
       }
