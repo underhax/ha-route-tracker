@@ -120,7 +120,7 @@ lovelace:
 
 ### Add and configure the card
 
-Add **Route Tracker** from the card picker. The visual editor configures the default map provider, map theme, tracked entities, and zones. Both tracked entities and zones support optional custom display names. YAML is optional and available through the card editor's code view.
+The visual editor configures the default map provider, map theme, tracked entities, and zones. Both tracked entities and zones support optional custom display names. YAML is optional and available through the card editor's code view.
 
 The card always offers the `device_tracker` entities selected in the integration. A `person` appears in the card editor only when at least one of its linked device trackers is also selected in the integration. A tracker linked to a person but not selected in Route Tracker does not make that person available.
 
@@ -129,6 +129,56 @@ The card always offers the `device_tracker` entities selected in the integration
 The visual editor includes an "Additional Features" section to enhance map popups when you click on a recorded point:
 - **Geocoding:** Adds a popup action to reverse-geocode the point's coordinates into a physical address using the Nominatim API.
 - **Routing:** Adds a popup link to get directions to the point via an external service. You can configure the starting point (either your device's current location or the center coordinates of a specific Home Assistant Zone) and choose your preferred routing provider (OpenStreetMap, Google Maps, Apple Maps, or Yandex Maps).
+
+<details><summary>How to add the card to your dashboard</summary>
+
+<table>
+  <tr>
+    <td colspan="3" width="50%" align="center">
+      <a href=".github/images/add-view.webp" target="_blank">
+          <img src=".github/images/add-view.webp" alt="Add view">
+      </a>
+    </td>
+    <td colspan="3" width="50%" align="center">
+      <a href=".github/images/add-route-tracker-card.webp" target="_blank">
+        <img src=".github/images/add-route-tracker-card.webp" alt="Add card">
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" width="33%" align="center">
+      <a href=".github/images/map-provider-theme.webp" target="_blank">
+          <img src=".github/images/map-provider-theme.webp" alt="Map Provider & Map Theme">
+      </a>
+    </td>
+    <td colspan="2" width="33%" align="center">
+      <a href=".github/images/trackers-zones.webp" target="_blank">
+        <img src=".github/images/trackers-zones.webp" alt="Trackers & Zones">
+      </a>
+    </td>
+    <td colspan="2" width="34%" align="center">
+      <a href=".github/images/additional-features.webp" target="_blank">
+        <img src=".github/images/additional-features.webp" alt="Additional Features">
+      </a>
+    </td>
+  </tr>
+</table>
+
+1. Navigate to your Home Assistant dashboard.
+2. Click the **pencil icon** in the top right corner and select **Edit dashboard**.
+3. *(Optional)* Click the **+** icon at the top to add a new view. Set the **Title**, **icon**, and **Layout**, then click **Save**.
+4. Click the **Add Card** button.
+5. Switch to the **By card** tab.
+6. Scroll down and select the **Route Tracker** card.
+7. In the *Route Tracker card configuration* window, configure the card to your liking:
+   - **Map Provider**
+   - **Map Theme**
+   - Add **Trackers**
+   - *(Optional)* Add **Zones**
+   - *(Optional)* Configure **Additional Features**
+8. Click **Save** to add the card, and **Done** to exit dashboard edit mode.
+
+</details>
 
 <details><summary>Show YAML configuration</summary>
 
