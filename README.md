@@ -63,13 +63,6 @@ Install Route Tracker through HACS or from a GitHub Release archive.
 
 </details>
 
-## Removal
-
-1. Open **Settings** > **Devices & services** > **Integrations**.
-2. Select the **Route Tracker** integration and click **Delete**.
-
-The integration automatically removes the Lovelace resource it registered during setup. If you are using YAML mode for Lovelace resources, also remove the `route-tracker-card.js` entry from `configuration.yaml`.
-
 ## Integration setup
 
 1. Open **Settings** > **Devices & services** > **Integrations**.
@@ -193,6 +186,14 @@ The map interface also provides built-in controls to switch between available ma
 Route Tracker requests history for the selected day through the authenticated Home Assistant frontend session. The selected date uses the Home Assistant timezone when available and falls back to the browser timezone only when necessary.
 
 Routes are available only after the corresponding virtual sensor begins receiving GPS updates. Existing history cannot be reconstructed. A source tracker must provide valid latitude and longitude attributes.
+
+## Removal
+
+1. Open **Settings** > **Devices & services** > **Integrations**.
+2. Select the **Route Tracker** integration and click **Delete**.
+3. Edit your dashboards and manually remove any Route Tracker cards you have added.
+
+The integration automatically removes the Lovelace resource it registered during setup. If you are using YAML mode for Lovelace resources, also remove the `route-tracker-card.js` entry from `configuration.yaml`.
 
 ## Development
 
