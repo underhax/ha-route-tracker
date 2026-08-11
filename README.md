@@ -1,6 +1,6 @@
 # Route Tracker
 
-<img src="https://raw.githubusercontent.com/underhax/ha-route-tracker/main/custom_components/route_tracker/brand/icon.svg" width="100" height="100" alt="Route Tracker">
+<img src="https://github.com/underhax/ha-route-tracker/blob/main/custom_components/route_tracker/brand/logo.png?raw=true" width="100" height="65" alt="Route Tracker">
 
 Route Tracker is a Home Assistant custom integration and Lovelace card for viewing daily routes from selected `device_tracker` entities. It creates event-driven virtual sensors for selected device trackers so GPS attribute updates are retained by the Home Assistant Recorder, then renders the recorded route on a map.
 
@@ -92,7 +92,7 @@ sensor.virtual_device_tracker_phone
 
 After selecting trackers in the integration options, Route Tracker prompts for an optional display name for each virtual sensor. Empty fields retain the entity-derived default name, and the names can be changed by reopening the integration options.
 
-The sensor state is the UTC ISO 8601 timestamp of the last accepted GPS update. Its attributes are `latitude`, `longitude`, `source_entity`, and `friendly_name`. The changing timestamp state gives Recorder a distinct state change to persist.
+The sensor state is the UTC ISO 8601 timestamp of the last accepted GPS update. Its primary attributes are `latitude`, `longitude`, `source_entity`, and `friendly_name`. Additional contextual data (`source_type`, `gps_accuracy`, `altitude`, `speed`, and `battery_level`) is also extracted and persisted if provided by the device tracker. The changing timestamp state gives Recorder a distinct state change to persist.
 
 The integration threshold is applied before the virtual sensor is updated. It accepts values from `0.01` to `1.0` km and defaults to `0.05` km.
 
