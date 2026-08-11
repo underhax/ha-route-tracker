@@ -63,9 +63,16 @@ Install Route Tracker through HACS or from a GitHub Release archive.
 
 </details>
 
+## Removal
+
+1. Open **Settings** > **Devices & services** > **Integrations**.
+2. Select the **Route Tracker** integration and click **Delete**.
+
+The integration automatically removes the Lovelace resource it registered during setup. If you are using YAML mode for Lovelace resources, also remove the `route-tracker-card.js` entry from `configuration.yaml`.
+
 ## Integration setup
 
-1. Open **Settings** > **Devices & services**.
+1. Open **Settings** > **Devices & services** > **Integrations**.
 2. Select **Add integration** and choose **Route Tracker**.
 3. Enter a name for the integration.
 4. Open the integration's **Configure** dialog.
