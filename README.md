@@ -135,30 +135,30 @@ The visual editor includes an "Additional Features" section to enhance map popup
 <table>
   <tr>
     <td colspan="3" width="50%" align="center">
-      <a href=".github/images/add-view.webp" target="_blank">
-          <img src=".github/images/add-view.webp" alt="Add view">
+      <a href="https://github.com/underhax/ha-route-tracker/blob/main/.github/images/add-view.webp" target="_blank">
+          <img src="https://github.com/underhax/ha-route-tracker/blob/main/.github/images/add-view.webp?raw=true" alt="Add view">
       </a>
     </td>
     <td colspan="3" width="50%" align="center">
-      <a href=".github/images/add-route-tracker-card.webp" target="_blank">
-        <img src=".github/images/add-route-tracker-card.webp" alt="Add card">
+      <a href="https://github.com/underhax/ha-route-tracker/blob/main/.github/images/add-route-tracker-card.webp" target="_blank">
+        <img src="https://github.com/underhax/ha-route-tracker/blob/main/.github/images/add-route-tracker-card.webp?raw=true" alt="Add card">
       </a>
     </td>
   </tr>
   <tr>
     <td colspan="2" width="33%" align="center">
-      <a href=".github/images/map-provider-theme.webp" target="_blank">
-          <img src=".github/images/map-provider-theme.webp" alt="Map Provider & Map Theme">
+      <a href="https://github.com/underhax/ha-route-tracker/blob/main/.github/images/map-provider-theme.webp" target="_blank">
+          <img src="https://github.com/underhax/ha-route-tracker/blob/main/.github/images/map-provider-theme.webp?raw=true" alt="Map Provider & Map Theme">
       </a>
     </td>
     <td colspan="2" width="33%" align="center">
-      <a href=".github/images/trackers-zones.webp" target="_blank">
-        <img src=".github/images/trackers-zones.webp" alt="Trackers & Zones">
+      <a href="https://github.com/underhax/ha-route-tracker/blob/main/.github/images/trackers-zones.webp" target="_blank">
+        <img src="https://github.com/underhax/ha-route-tracker/blob/main/.github/images/trackers-zones.webp?raw=true" alt="Trackers & Zones">
       </a>
     </td>
     <td colspan="2" width="34%" align="center">
-      <a href=".github/images/additional-features.webp" target="_blank">
-        <img src=".github/images/additional-features.webp" alt="Additional Features">
+      <a href="https://github.com/underhax/ha-route-tracker/blob/main/.github/images/additional-features.webp" target="_blank">
+        <img src="https://github.com/underhax/ha-route-tracker/blob/main/.github/images/additional-features.webp?raw=true" alt="Additional Features">
       </a>
     </td>
   </tr>
