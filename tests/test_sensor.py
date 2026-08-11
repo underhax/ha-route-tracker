@@ -220,3 +220,42 @@ def test_extract_extra_attributes() -> None:
         "speed": 0.0,
     }
     assert extract_extra_attributes(zero_attrs) == {}
+
+
+async def test_sensor_resolves_coordinates_from_zone(hass: HomeAssistant) -> None:
+    """Test that a router-based tracker inherits coordinates from its current zone."""
+    hass.states.async_set("zone.work", "zoning", {"latitude": 0.0, "longitude": 0.0})
+
+    hass.states.async_set(
+        "device_tracker.router_phone", "work", {"source_type": "router"}
+    )
+
+    sensor = RouteTrackerSensor(hass, "device_tracker.router_phone", 0.05, None)
+    await sensor.async_added_to_hass()
+
+    assert sensor.native_value is not None
+    assert sensor.extra_state_attributes is not None
+    assert sensor.extra_state_attributes["latitude"] == 0.0
+    assert sensor.extra_state_attributes["longitude"] == 0.0
+
+    hass.states.async_set("zone.school", "zoning", {"latitude": 0.0, "longitude": 0.0})
+    hass.states.async_set(
+        "device_tracker.router_phone", "school", {"source_type": "router"}
+    )
+    await hass.async_block_till_done()
+
+    assert sensor.extra_state_attributes["latitude"] == 0.0
+    assert sensor.extra_state_attributes["longitude"] == 0.0
+
+    hass.states.async_set(
+        "zone.bad", "zoning", {"latitude": "invalid", "longitude": 0.0}
+    )
+    hass.states.async_set(
+        "device_tracker.router_phone", "bad", {"source_type": "router"}
+    )
+    await hass.async_block_till_done()
+
+    assert sensor.extra_state_attributes["latitude"] == 0.0
+    assert sensor.extra_state_attributes["longitude"] == 0.0
+
+    await sensor.async_will_remove_from_hass()

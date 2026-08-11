@@ -45,6 +45,7 @@ export const fr = {
   'card.gps_accuracy': 'Précision',
   'card.altitude': 'Altitude',
   'card.speed': 'Vitesse',
+  'card.battery_level': 'Batterie',
   'card.unit_m': 'm',
   'card.unit_kmh': 'km/h',
   'card.unit_ft': 'pi',

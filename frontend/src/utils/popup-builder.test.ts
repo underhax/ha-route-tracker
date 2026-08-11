@@ -52,7 +52,8 @@ describe('buildPopupContent()', () => {
       source_type: 'gps',
       gps_accuracy: 10,
       altitude: 100.5,
-      speed: 60
+      speed: 60,
+      battery_level: 65
     };
     const popup = buildPopupContent(pointWithExtra as any, 'en', mockLocalize);
     const extraAttrs = popup.querySelector('.rt-popup-extra-attrs');
@@ -62,6 +63,7 @@ describe('buildPopupContent()', () => {
     expect(extraAttrs?.innerHTML).toContain('title="translated_card.gps_accuracy: 10 translated_card.unit_m"');
     expect(extraAttrs?.innerHTML).toContain('title="translated_card.altitude: 100.5 translated_card.unit_m"');
     expect(extraAttrs?.innerHTML).toContain('title="translated_card.speed: 60 translated_card.unit_kmh"');
+    expect(extraAttrs?.innerHTML).toContain('title="translated_card.battery_level: 65%"');
   });
 
   it('uses default fallback labels for extra attributes if translation is missing', () => {
@@ -72,7 +74,8 @@ describe('buildPopupContent()', () => {
       source_type: 'gps',
       gps_accuracy: 10,
       altitude: 100.5,
-      speed: 60
+      speed: 60,
+      battery_level: 65
     };
     const popup = buildPopupContent(pointWithExtra as any, 'en', emptyLocalize);
     const extraAttrs = popup.querySelector('.rt-popup-extra-attrs');
@@ -82,6 +85,7 @@ describe('buildPopupContent()', () => {
     expect(extraAttrs?.innerHTML).toContain('title="Accuracy: 10 m"');
     expect(extraAttrs?.innerHTML).toContain('title="Altitude: 100.5 m"');
     expect(extraAttrs?.innerHTML).toContain('title="Speed: 60 km/h"');
+    expect(extraAttrs?.innerHTML).toContain('title="Battery: 65%"');
   });
 
   it('renders extra attributes using US customary units when hass config is imperial', () => {

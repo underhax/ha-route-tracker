@@ -479,7 +479,8 @@ export class RouteTrackerCard extends LitElement {
             source_type: state.attributes?.['source_type'],
             gps_accuracy: state.attributes?.['gps_accuracy'],
             altitude: state.attributes?.['altitude'],
-            speed: state.attributes?.['speed']
+            speed: state.attributes?.['speed'],
+            battery_level: state.attributes?.['battery_level']
           };
           if (!lastLoc) {
             points.push(point);
@@ -516,7 +517,8 @@ export class RouteTrackerCard extends LitElement {
           source_type: currentState.attributes?.['source_type'],
           gps_accuracy: currentState.attributes?.['gps_accuracy'],
           altitude: currentState.attributes?.['altitude'],
-          speed: currentState.attributes?.['speed']
+          speed: currentState.attributes?.['speed'],
+          battery_level: currentState.attributes?.['battery_level']
         };
         if (!lastLoc) {
           points.push(point);

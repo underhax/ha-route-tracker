@@ -49,6 +49,7 @@ export const es = {
   'card.gps_accuracy': 'Precisión',
   'card.altitude': 'Altitud',
   'card.speed': 'Velocidad',
+  'card.battery_level': 'Batería',
   'card.unit_m': 'm',
   'card.unit_kmh': 'km/h',
   'card.unit_ft': 'ft',

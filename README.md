@@ -1,6 +1,6 @@
 # Route Tracker
 
-<img src="https://raw.githubusercontent.com/underhax/ha-route-tracker/main/custom_components/route_tracker/brand/logo.png" width="100" height="100" alt="Route Tracker">
+<img src="https://raw.githubusercontent.com/underhax/ha-route-tracker/main/custom_components/route_tracker/brand/icon.svg" width="100" height="100" alt="Route Tracker">
 
 Route Tracker is a Home Assistant custom integration and Lovelace card for viewing daily routes from selected `device_tracker` entities. It creates event-driven virtual sensors for selected device trackers so GPS attribute updates are retained by the Home Assistant Recorder, then renders the recorded route on a map.
 

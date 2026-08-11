@@ -49,6 +49,7 @@ export const uk = {
   'card.gps_accuracy': 'Точність',
   'card.altitude': 'Висота',
   'card.speed': 'Швидкість',
+  'card.battery_level': 'Батарея',
   'card.unit_m': 'м',
   'card.unit_kmh': 'км/год',
   'card.unit_ft': 'фут',

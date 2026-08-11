@@ -9,6 +9,7 @@ export interface RoutePoint {
   gps_accuracy?: number;
   altitude?: number;
   speed?: number;
+  battery_level?: number;
 }
 
 export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {

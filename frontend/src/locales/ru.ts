@@ -49,6 +49,7 @@ export const ru = {
   'card.gps_accuracy': 'Точность',
   'card.altitude': 'Высота',
   'card.speed': 'Скорость',
+  'card.battery_level': 'Батарея',
   'card.unit_m': 'м',
   'card.unit_kmh': 'км/ч',
   'card.unit_ft': 'фут',

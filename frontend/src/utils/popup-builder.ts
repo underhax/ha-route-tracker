@@ -7,6 +7,7 @@ import { sourceSvg } from '../icons/source';
 import { accuracySvg } from '../icons/accuracy';
 import { altitudeSvg } from '../icons/altitude';
 import { speedSvg } from '../icons/speed';
+import { batterySvg } from '../icons/battery';
 import { fetchAddress } from './geocoder';
 import { ROUTING_PROVIDERS, DEFAULT_ROUTING_PROVIDER } from './routing-providers';
 
@@ -86,6 +87,9 @@ export function buildPopupContent(
   }
   if (point.speed !== undefined && point.speed !== 0) {
     extraParts.push(createAttrNode(speedSvg, `${point.speed} ${speedUnit}`, `${localize('card.speed', language) || 'Speed'}: ${point.speed} ${speedUnit}`));
+  }
+  if (point.battery_level !== undefined) {
+    extraParts.push(createAttrNode(batterySvg, `${point.battery_level}%`, `${localize('card.battery_level', language) || 'Battery'}: ${point.battery_level}%`));
   }
 
   if (extraParts.length > 0) {

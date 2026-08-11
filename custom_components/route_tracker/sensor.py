@@ -18,8 +18,9 @@ from typing import cast
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import ATTR_LATITUDE, ATTR_LONGITUDE
-from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, callback
+from homeassistant.const import ATTR_BATTERY_LEVEL, ATTR_LATITUDE, ATTR_LONGITUDE
+from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, State, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import (
     EventStateChangedData,
@@ -45,6 +46,73 @@ def _haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     dlon = lon2 - lon1
     a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
     return 2 * 6371 * asin(sqrt(a))
+
+
+def _resolve_coordinates(
+    hass: HomeAssistant, state: State
+) -> tuple[float, float] | None:
+    """Resolve latitude and longitude from a state, falling back to its zone."""
+    lat: object = state.attributes.get(ATTR_LATITUDE)
+    lon: object = state.attributes.get(ATTR_LONGITUDE)
+
+    if lat is not None and lon is not None:
+        try:
+            return float(str(lat)), float(str(lon))
+        except (ValueError, TypeError):
+            pass
+
+    state_val = state.state
+    if state_val and state_val.lower() not in ("not_home", "unknown", "unavailable"):
+        zone_state = hass.states.get(f"zone.{state_val.lower()}")
+        if zone_state:
+            z_lat: object = zone_state.attributes.get(ATTR_LATITUDE)
+            z_lon: object = zone_state.attributes.get(ATTR_LONGITUDE)
+            if z_lat is not None and z_lon is not None:
+                try:
+                    return float(str(z_lat)), float(str(z_lon))
+                except (ValueError, TypeError):
+                    pass
+
+    return None
+
+
+def _get_battery_level(hass: HomeAssistant, state: State) -> float | None:
+    """Extract battery level for a tracker."""
+    bat = state.attributes.get(ATTR_BATTERY_LEVEL)
+    if isinstance(bat, (int, float, str)):
+        try:
+            return float(bat)
+        except ValueError:
+            pass
+
+    ent_reg = er.async_get(hass)
+    tracker_entry = ent_reg.async_get(state.entity_id)
+    if not tracker_entry or not tracker_entry.device_id:
+        return None
+
+    device_id = tracker_entry.device_id
+    device_entities = er.async_entries_for_device(
+        ent_reg, device_id, include_disabled_entities=False
+    )
+
+    battery_sensors = [
+        entry
+        for entry in device_entities
+        if entry.domain == "sensor"
+        and (
+            entry.original_device_class == "battery" or entry.device_class == "battery"
+        )
+    ]
+
+    if len(battery_sensors) == 1:
+        bat_state = hass.states.get(battery_sensors[0].entity_id)
+        if bat_state and bat_state.state not in ("unknown", "unavailable"):
+            try:
+                return float(bat_state.state)
+            except (ValueError, TypeError):
+                pass
+
+    return None
 
 
 def extract_extra_attributes(attributes: Mapping[str, object]) -> dict[str, object]:
@@ -192,17 +260,11 @@ class RouteTrackerSensor(SensorEntity):
         if new_state is None:
             return
 
-        lat: object = new_state.attributes.get(ATTR_LATITUDE)
-        lon: object = new_state.attributes.get(ATTR_LONGITUDE)
-
-        if lat is None or lon is None:
+        coords = _resolve_coordinates(self.hass, new_state)
+        if coords is None:
             return
 
-        try:
-            lat_f = float(str(lat))
-            lon_f = float(str(lon))
-        except (ValueError, TypeError):
-            return
+        lat_f, lon_f = coords
 
         if (
             self._last_lat is not None
@@ -214,13 +276,20 @@ class RouteTrackerSensor(SensorEntity):
 
         self._last_lat = lat_f
         self._last_lon = lon_f
-        self._attr_native_value = datetime.now(tz=UTC).isoformat()
-        self._attr_extra_state_attributes = {
+
+        extra_attrs = {
             ATTR_LATITUDE: lat_f,
             ATTR_LONGITUDE: lon_f,
             "source_entity": self._source_entity_id,
             **extract_extra_attributes(new_state.attributes),
         }
+
+        battery_level = _get_battery_level(self.hass, new_state)
+        if battery_level is not None:
+            extra_attrs[ATTR_BATTERY_LEVEL] = battery_level
+
+        self._attr_native_value = datetime.now(tz=UTC).isoformat()
+        self._attr_extra_state_attributes = extra_attrs
         self.async_write_ha_state()
 
     @callback
@@ -231,19 +300,20 @@ class RouteTrackerSensor(SensorEntity):
             LOGGER.warning("Source entity %s not found", self._source_entity_id)
             return
 
-        lat: object = source.attributes.get(ATTR_LATITUDE)
-        lon: object = source.attributes.get(ATTR_LONGITUDE)
+        coords = _resolve_coordinates(self.hass, source)
+        if coords is not None:
+            lat_f, lon_f = coords
 
-        if lat is not None and lon is not None:
-            try:
-                lat_f = float(str(lat))
-                lon_f = float(str(lon))
-            except (ValueError, TypeError):
-                return
-            self._attr_native_value = datetime.now(tz=UTC).isoformat()
-            self._attr_extra_state_attributes = {
+            extra_attrs = {
                 ATTR_LATITUDE: lat_f,
                 ATTR_LONGITUDE: lon_f,
                 "source_entity": self._source_entity_id,
                 **extract_extra_attributes(source.attributes),
             }
+
+            battery_level = _get_battery_level(self.hass, source)
+            if battery_level is not None:
+                extra_attrs[ATTR_BATTERY_LEVEL] = battery_level
+
+            self._attr_native_value = datetime.now(tz=UTC).isoformat()
+            self._attr_extra_state_attributes = extra_attrs
