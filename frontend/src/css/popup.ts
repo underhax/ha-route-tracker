@@ -21,9 +21,10 @@ export const popupStyles = css`
     font-family: monospace;
   }
   .rt-popup-extra-attrs {
-    display: flex;
-    gap: 6px 16px;
-    justify-content: flex-start;
+    display: grid;
+    grid-template-columns: repeat(3, max-content);
+    gap: 8px 10px;
+    justify-content: start;
     padding-top: 10px;
     border-top: 1px solid #d8d8d8;
     font-family: monospace;

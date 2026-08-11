@@ -102,7 +102,7 @@ The integration threshold is applied before the virtual sensor is updated. It ac
 
 | Static Preview | Animated Demo (AVIF) |
 | :---: | :---: |
-| <a href="https://raw.githubusercontent.com/underhax/ha-route-tracker/main/.github/demo/demo.webp" target="_blank"><img src="https://raw.githubusercontent.com/underhax/ha-route-tracker/main/.github/demo/demo.webp" width="350" alt="Static Preview"></a> | <a href="https://raw.githubusercontent.com/underhax/ha-route-tracker/main/.github/demo/demo.avif" target="_blank"><img src="https://raw.githubusercontent.com/underhax/ha-route-tracker/main/.github/demo/demo.avif" width="350" alt="Animated Demo (Modern Browser Required)"></a> |
+| <a href="https://raw.githubusercontent.com/underhax/ha-route-tracker/refs/heads/main/.github/demo/demo.webp" target="_blank"><img src="https://github.com/underhax/ha-route-tracker/blob/main/.github/demo/demo.webp?raw=true" width="350" alt="Static Preview"></a> | <a href="https://raw.githubusercontent.com/underhax/ha-route-tracker/main/.github/demo/demo.avif" target="_blank"><img src="https://github.com/underhax/ha-route-tracker/blob/main/.github/demo/demo.avif?raw=true" width="350" alt="Animated Demo (Modern Browser Required)"></a> |
 
 ### Add the resource
 
