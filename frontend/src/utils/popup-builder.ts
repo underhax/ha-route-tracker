@@ -95,6 +95,11 @@ export function buildPopupContent(
   if (extraParts.length > 0) {
     const extraContainer = document.createElement('div');
     extraContainer.className = 'rt-popup-extra-attrs';
+
+    if (extraParts.length === 4) {
+      extraContainer.style.gridTemplateColumns = 'repeat(4, max-content)';
+    }
+
     extraParts.forEach(part => extraContainer.appendChild(part));
     container.appendChild(extraContainer);
   }
