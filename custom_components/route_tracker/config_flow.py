@@ -1,7 +1,7 @@
 """Config flow for Route Tracker integration."""
 
 from collections.abc import Callable, Mapping
-from typing import cast
+from typing import cast, override
 
 import voluptuous as vol
 from homeassistant.config_entries import (
@@ -13,7 +13,6 @@ from homeassistant.config_entries import (
 from homeassistant.const import CONF_NAME
 from homeassistant.core import callback
 from homeassistant.helpers import selector
-from typing_extensions import override
 
 from .const import (
     CONF_TRACKED_ENTITIES,
@@ -28,7 +27,7 @@ def device_tracker_entity_ids(value: object) -> list[str]:
     if not isinstance(value, list):
         return []
 
-    entity_ids = cast(list[object], value)
+    entity_ids = cast("list[object]", value)
     return list(
         dict.fromkeys(
             entity_id
@@ -43,7 +42,7 @@ def validate_device_tracker_entity_ids(value: object) -> list[str]:
     if not isinstance(value, list):
         raise vol.Invalid("tracked_entities_must_be_device_trackers")
 
-    entity_ids = cast(list[object], value)
+    entity_ids = cast("list[object]", value)
     if any(
         not isinstance(entity_id, str) or not entity_id.startswith("device_tracker.")
         for entity_id in entity_ids
@@ -58,7 +57,7 @@ def tracker_friendly_names(value: object) -> dict[str, str]:
     if not isinstance(value, Mapping):
         return {}
 
-    names = cast(Mapping[object, object], value)
+    names = cast("Mapping[object, object]", value)
     return {
         entity_id: name.strip()
         for entity_id, name in names.items()
@@ -137,18 +136,18 @@ class RouteTrackerOptionsFlowHandler(OptionsFlow):
                 return await self.async_step_friendly_names()
 
         options: Mapping[str, object] = cast(
-            Mapping[str, object], self.config_entry.options
+            "Mapping[str, object]", self.config_entry.options
         )
         tracked_default = device_tracker_entity_ids(
             options.get(CONF_TRACKED_ENTITIES, [])
         )
 
         entity_selector = cast(
-            Callable[[selector.EntitySelectorConfig], object],
+            "Callable[[selector.EntitySelectorConfig], object]",
             selector.EntitySelector,
         )
         number_selector = cast(
-            Callable[[selector.NumberSelectorConfig], object],
+            "Callable[[selector.NumberSelectorConfig], object]",
             selector.NumberSelector,
         )
         entity_sel = entity_selector(
@@ -198,13 +197,13 @@ class RouteTrackerOptionsFlowHandler(OptionsFlow):
             return self.async_create_entry(title="", data=self._pending_options)
 
         options: Mapping[str, object] = cast(
-            Mapping[str, object], self.config_entry.options
+            "Mapping[str, object]", self.config_entry.options
         )
         current_names = tracker_friendly_names(
             options.get(CONF_TRACKER_FRIENDLY_NAMES, {})
         )
         text_selector = cast(
-            Callable[[selector.TextSelectorConfig], object], selector.TextSelector
+            "Callable[[selector.TextSelectorConfig], object]", selector.TextSelector
         )
         name_selector = text_selector(selector.TextSelectorConfig())
         name_schema = {

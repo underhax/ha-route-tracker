@@ -1,10 +1,13 @@
 from types import MappingProxyType
+from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers import entity_registry as er
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
+    from homeassistant.helpers import device_registry as dr
+    from homeassistant.helpers import entity_registry as er
 
 from custom_components.route_tracker.sensor import RouteTrackerSensor
 

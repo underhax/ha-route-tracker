@@ -1,7 +1,24 @@
 [tool.mypy]
+python_version = "3.14"
+mypy_path = "."
 explicit_package_bases = true
 namespace_packages = true
-mypy_path = "."
+strict = true
+warn_unreachable = true
+enable_error_code = [
+    "deprecated",
+    "explicit-override",
+    "exhaustive-match",
+    "ignore-without-code",
+    "mutable-override",
+    "possibly-undefined",
+    "redundant-expr",
+    "redundant-self",
+    "truthy-bool",
+    "truthy-iterable",
+    "unimported-reveal",
+    "unused-awaitable",
+]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -15,5 +32,28 @@ addopts = [
 ]
 
 [tool.basedpyright]
+pythonVersion = "3.14"
+typeCheckingMode = "recommended"
 venvPath = "."
 venv = ".venv"
+
+[tool.ruff]
+target-version = "py314"
+
+[tool.ruff.lint]
+select = [
+    "F", "E", "W", "I", "N", "UP", "ASYNC", "S", "BLE",
+    "B", "A", "C4", "DTZ", "T10", "T20", "EXE", "ISC",
+    "PIE", "PT", "RET", "SIM", "TID", "TC", "ARG", "PTH",
+    "ERA", "TRY", "FLY", "PERF", "FURB", "LOG", "G",
+    "SLOT", "SLF", "INP", "ICN", "YTT", "PLE", "D", "ANN", "RUF"
+]
+ignore = ["ISC001"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "S101", "T201", "ARG001", "S105", "S106", "S108", "SLF001", "D", "ANN",
+]

@@ -1,12 +1,15 @@
 """Tests for Route Tracker integration setup and removal."""
 
-from collections.abc import Awaitable, Callable
-from typing import cast
+from typing import TYPE_CHECKING, cast
 from unittest.mock import MagicMock, patch
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
 from homeassistant.helpers.http import KEY_ALLOW_CONFIGURED_CORS
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
+    from homeassistant.core import HomeAssistant
 
 from custom_components.route_tracker import (
     async_remove_entry,
@@ -88,14 +91,14 @@ async def test_register_static_path_indirect(hass: HomeAssistant) -> None:
     ):
         _ = await async_setup_entry(hass, entry)
 
-    mock_app = cast(MagicMock, hass.http.app)
-    mock_router = cast(MagicMock, mock_app.router)
-    mock_register = cast(MagicMock, mock_router.register_resource)
+    mock_app = cast("MagicMock", hass.http.app)
+    mock_router = cast("MagicMock", mock_app.router)
+    mock_register = cast("MagicMock", mock_router.register_resource)
     mock_register.assert_called_once()
 
-    mock_getitem = cast(MagicMock, mock_app.__getitem__)
+    mock_getitem = cast("MagicMock", mock_app.__getitem__)
     mock_getitem.assert_called_with(KEY_ALLOW_CONFIGURED_CORS)
-    mock_cors = cast(MagicMock, mock_getitem.return_value)
+    mock_cors = cast("MagicMock", mock_getitem.return_value)
     mock_cors.assert_called_once()
 
 
@@ -115,9 +118,9 @@ async def test_async_update_listener_indirect(hass: HomeAssistant) -> None:
     ):
         _ = await async_setup_entry(hass, entry)
 
-    add_update_listener = cast(MagicMock, entry.add_update_listener)
+    add_update_listener = cast("MagicMock", entry.add_update_listener)
     listener = cast(
-        Callable[[HomeAssistant, ConfigEntry], Awaitable[None]],
+        "Callable[[HomeAssistant, ConfigEntry], Awaitable[None]]",
         add_update_listener.call_args[0][0],
     )
 

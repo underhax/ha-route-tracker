@@ -12,22 +12,24 @@ every GPS coordinate.
 
 from collections.abc import Mapping
 from datetime import UTC, date, datetime
-from decimal import Decimal
 from math import asin, cos, radians, sin, sqrt
-from typing import cast
+from typing import TYPE_CHECKING, cast, override
 
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_BATTERY_LEVEL, ATTR_LATITUDE, ATTR_LONGITUDE
 from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, State, callback
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import (
     EventStateChangedData,
     async_track_state_change_event,
 )
-from homeassistant.helpers.typing import StateType
-from typing_extensions import override
+
+if TYPE_CHECKING:
+    from decimal import Decimal
+
+    from homeassistant.config_entries import ConfigEntry
+    from homeassistant.helpers.entity_platform import AddEntitiesCallback
+    from homeassistant.helpers.typing import StateType
 
 from .const import (
     CONF_TRACKED_ENTITIES,
@@ -58,7 +60,7 @@ def _resolve_coordinates(
     if lat is not None and lon is not None:
         try:
             return float(str(lat)), float(str(lon))
-        except (ValueError, TypeError):
+        except ValueError, TypeError:
             pass
 
     state_val = state.state
@@ -70,7 +72,7 @@ def _resolve_coordinates(
             if z_lat is not None and z_lon is not None:
                 try:
                     return float(str(z_lat)), float(str(z_lon))
-                except (ValueError, TypeError):
+                except ValueError, TypeError:
                     pass
 
     return None
@@ -109,7 +111,7 @@ def _get_battery_level(hass: HomeAssistant, state: State) -> float | None:
         if bat_state and bat_state.state not in ("unknown", "unavailable"):
             try:
                 return float(bat_state.state)
-            except (ValueError, TypeError):
+            except ValueError, TypeError:
                 pass
 
     return None
@@ -134,7 +136,7 @@ def extract_extra_attributes(attributes: Mapping[str, object]) -> dict[str, obje
                 val_f = float(str(val))
                 if val_f != 0.0:
                     extra[key] = val_f
-            except (ValueError, TypeError):
+            except ValueError, TypeError:
                 pass
 
     return extra
@@ -146,11 +148,11 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Route Tracker virtual sensors from a config entry."""
-    options: Mapping[str, object] = cast(Mapping[str, object], entry.options)
+    options: Mapping[str, object] = cast("Mapping[str, object]", entry.options)
     tracked_val: object = options.get(CONF_TRACKED_ENTITIES, [])
     tracked: list[str]
     if isinstance(tracked_val, list):
-        tracked_list = cast(list[object], tracked_val)
+        tracked_list = cast("list[object]", tracked_val)
         tracked = [
             entity_id
             for entity_id in tracked_list
@@ -162,7 +164,7 @@ async def async_setup_entry(
     friendly_names_val = options.get(CONF_TRACKER_FRIENDLY_NAMES, {})
     friendly_names: dict[str, str]
     if isinstance(friendly_names_val, Mapping):
-        configured_names = cast(Mapping[object, object], friendly_names_val)
+        configured_names = cast("Mapping[object, object]", friendly_names_val)
         friendly_names = {
             entity_id: name.strip()
             for entity_id, name in configured_names.items()
@@ -178,7 +180,7 @@ async def async_setup_entry(
     minimal_distance: float
     try:
         minimal_distance = float(str(min_val))
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         minimal_distance = DEFAULT_MINIMAL_DISTANCE
 
     entities = [

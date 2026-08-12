@@ -2,10 +2,12 @@
 
 import hashlib
 from pathlib import Path
-from typing import Protocol, cast
+from typing import TYPE_CHECKING, Protocol, cast
 
-from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN, LOGGER
 
@@ -79,13 +81,13 @@ def _get_resources(
     hass: HomeAssistant,
 ) -> LovelaceResourcesCollection | None:
     """Return the Lovelace resources collection when available in storage mode."""
-    lovelace = cast(LovelaceData | None, hass.data.get("lovelace"))
+    lovelace = cast("LovelaceData | None", hass.data.get("lovelace"))
     if lovelace is None:
         LOGGER.debug("Lovelace is not loaded, skipping resource registration")
         return None
 
     resources = cast(
-        LovelaceResourcesCollection | None, getattr(lovelace, "resources", None)
+        "LovelaceResourcesCollection | None", getattr(lovelace, "resources", None)
     )
     if resources is None:
         LOGGER.debug("Lovelace resources not available")
@@ -145,12 +147,12 @@ async def async_register_resource(
 
 async def async_unregister_resource(hass: HomeAssistant) -> None:
     """Unregister the Lovelace resource."""
-    lovelace = cast(LovelaceData | None, hass.data.get("lovelace"))
+    lovelace = cast("LovelaceData | None", hass.data.get("lovelace"))
     if lovelace is None:
         return
 
     resources = cast(
-        LovelaceResourcesCollection | None, getattr(lovelace, "resources", None)
+        "LovelaceResourcesCollection | None", getattr(lovelace, "resources", None)
     )
     if (
         resources is None

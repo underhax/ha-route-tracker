@@ -1,10 +1,14 @@
 """Tests for Lovelace resource registration."""
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import pytest
-from homeassistant.core import HomeAssistant
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from homeassistant.core import HomeAssistant
 
 from custom_components.route_tracker.lovelace import (
     RESOURCE_BASE_URL,
@@ -37,14 +41,14 @@ class MockResources:
     async def async_create_item(self, item: dict[str, str]) -> None:
         """Mock async_create_item."""
         if self.should_fail:
-            raise ValueError("API error")
+            raise ValueError
         self.create_called = True
         self.last_created_item = item
 
     async def async_delete_item(self, item_id: str) -> None:
         """Mock async_delete_item."""
         if self.should_fail:
-            raise ValueError("API error")
+            raise ValueError
         self.delete_called = True
         self.last_deleted_id = item_id
 
@@ -108,7 +112,7 @@ async def test_register_resource_no_resources(
 async def test_register_resource_yaml_mode(
     hass: HomeAssistant, mock_lovelace: MockLovelace
 ) -> None:
-    """Test registering when lovelace resources is missing async_create_item (YAML mode)."""
+    """Test registration when Lovelace resources use YAML mode."""
     mock_lovelace.resources = MockResourcesYAML()
     hass.data["lovelace"] = mock_lovelace
     with patch("custom_components.route_tracker.lovelace.LOGGER.debug") as mock_debug:

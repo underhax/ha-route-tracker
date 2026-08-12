@@ -1,10 +1,14 @@
-from collections.abc import Iterable
 from types import MappingProxyType
+from typing import TYPE_CHECKING
 
 from homeassistant import config_entries
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import Entity
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from homeassistant.core import HomeAssistant
+    from homeassistant.helpers.entity import Entity
 
 from custom_components.route_tracker.const import (
     CONF_TRACKED_ENTITIES,

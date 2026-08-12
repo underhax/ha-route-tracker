@@ -29,7 +29,7 @@ async def test_static_resource_requires_revalidation(
     if content_encoding is not None:
         headers["Content-Encoding"] = content_encoding
     upstream_response = web.Response(headers=headers)
-    request = cast(web.Request, MagicMock(spec=web.Request))
+    request = cast("web.Request", MagicMock(spec=web.Request))
     resource = _StubResource("/route_tracker", "/tmp")
 
     fake_handle = AsyncMock(return_value=upstream_response)

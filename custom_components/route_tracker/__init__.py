@@ -1,11 +1,14 @@
 """The Route Tracker integration."""
 
+from typing import TYPE_CHECKING, override
+
 from aiohttp import web
 from aiohttp.hdrs import CACHE_CONTROL
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
 from homeassistant.helpers.http import KEY_ALLOW_CONFIGURED_CORS
-from typing_extensions import override
+
+if TYPE_CHECKING:
+    from homeassistant.config_entries import ConfigEntry
+    from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN, LOGGER
 from .lovelace import (
