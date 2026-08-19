@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import * as hamburger from './hamburger';
-import * as marker from './marker';
-import * as resetView from './reset-view';
-import * as themeToggle from './theme-toggle';
-import * as source from './source';
-import * as accuracy from './accuracy';
-import * as altitude from './altitude';
-import * as speed from './speed';
+import * as accuracy from './accuracy.ts';
+import * as altitude from './altitude.ts';
+import * as hamburger from './hamburger.ts';
+import * as marker from './marker.ts';
+import * as resetView from './reset-view.ts';
+import * as source from './source.ts';
+import * as speed from './speed.ts';
+import * as themeToggle from './theme-toggle.ts';
 
 describe('Icons', () => {
   it('exports defined SVG strings for all icons', () => {

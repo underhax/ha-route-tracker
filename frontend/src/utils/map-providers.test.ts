@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { getBaseMaps } from './map-providers';
+import { getBaseMaps } from './map-providers.ts';
 
 vi.mock('leaflet', () => {
   return {

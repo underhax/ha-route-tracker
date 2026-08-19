@@ -1,6 +1,6 @@
-import { css } from 'lit';
+import { type CSSResult, css } from 'lit';
 
-export const leafletOverridesStyles = css`
+export const leafletOverridesStyles: CSSResult = css`
   .leaflet-bar {
     border: 1px solid rgba(0, 0, 0, 0.07) !important;
   }

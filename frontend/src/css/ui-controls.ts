@@ -1,6 +1,6 @@
-import { css } from 'lit';
+import { type CSSResult, css } from 'lit';
 
-export const uiControlsStyles = css`
+export const uiControlsStyles: CSSResult = css`
   .attribution-outside {
     position: absolute !important;
     bottom: 0px !important;

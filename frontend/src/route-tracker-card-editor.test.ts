@@ -1,6 +1,6 @@
-import { describe, expect, it, beforeEach, afterEach } from 'vitest';
-import { RouteTrackerCardEditor } from './route-tracker-card-editor';
 import type { HomeAssistant } from 'custom-card-helpers';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { RouteTrackerCardEditor } from './route-tracker-card-editor.ts';
 
 interface RouteEntityConfig {
   entity: string;
@@ -34,8 +34,8 @@ describe('RouteTrackerCardEditor', () => {
     editor = document.createElement('route-tracker-card-editor') as RouteTrackerCardEditor;
 
     editor.hass = {
-      states: {},
       language: 'en',
+      states: {},
     } as unknown as HomeAssistant;
 
     container.appendChild(editor);
@@ -48,7 +48,9 @@ describe('RouteTrackerCardEditor', () => {
   });
 
   it('renders empty when config or hass is missing', async () => {
-    const editorEmpty = document.createElement('route-tracker-card-editor') as RouteTrackerCardEditor;
+    const editorEmpty = document.createElement(
+      'route-tracker-card-editor',
+    ) as RouteTrackerCardEditor;
     container.appendChild(editorEmpty);
     await editorEmpty.updateComplete;
 
@@ -57,10 +59,10 @@ describe('RouteTrackerCardEditor', () => {
 
   it('sets config and renders basic elements', async () => {
     editor.setConfig({
+      entities: [],
       map_provider: 'osm_default',
       theme_mode: 'auto',
-      entities: [],
-      zones: []
+      zones: [],
     });
 
     await editor.updateComplete;
@@ -113,34 +115,42 @@ describe('RouteTrackerCardEditor', () => {
   });
 
   it('validates entity eligibility for unsupported domains', () => {
-    const errorSpy = (editor as unknown as { _routeEntityError: (id: string) => string | undefined })._routeEntityError;
+    const errorSpy = (
+      editor as unknown as { _routeEntityError: (id: string) => string | undefined }
+    )._routeEntityError;
 
     expect(errorSpy.call(editor, '')).toBeUndefined();
 
     Object.assign(editor.hass.states, {
-      'sensor.virtual_device_tracker_foo': { state: 'on', attributes: {} } as TestEntityState,
       'person.test': {
+        attributes: { device_trackers: ['device_tracker.foo'] },
         state: 'home',
-        attributes: { device_trackers: ['device_tracker.foo'] }
-      } as TestEntityState
+      } as TestEntityState,
+      'sensor.virtual_device_tracker_foo': { attributes: {}, state: 'on' } as TestEntityState,
     });
     expect(errorSpy.call(editor, 'person.test')).toBeUndefined();
 
-    expect(errorSpy.call(editor, 'light.test')).toBe('Only persons and device trackers configured in Route Tracker are supported.');
+    expect(errorSpy.call(editor, 'light.test')).toBe(
+      'Only persons and device trackers configured in Route Tracker are supported.',
+    );
 
     Object.assign(editor.hass.states, {
-      'person.bad': { state: 'home', attributes: {} } as TestEntityState
+      'person.bad': { attributes: {}, state: 'home' } as TestEntityState,
     });
-    expect(errorSpy.call(editor, 'person.bad')).toBe('This person has no device tracker selected in Route Tracker. Add a tracker to the integration and link it to this person.');
+    expect(errorSpy.call(editor, 'person.bad')).toBe(
+      'This person has no device tracker selected in Route Tracker. Add a tracker to the integration and link it to this person.',
+    );
 
     Object.assign(editor.hass.states, {
-      'device_tracker.bad': { state: 'home', attributes: {} } as TestEntityState
+      'device_tracker.bad': { attributes: {}, state: 'home' } as TestEntityState,
     });
-    expect(errorSpy.call(editor, 'device_tracker.bad')).toBe('This device tracker is not configured in Route Tracker.');
+    expect(errorSpy.call(editor, 'device_tracker.bad')).toBe(
+      'This device tracker is not configured in Route Tracker.',
+    );
   });
 
   it('adds a new entity when add button is clicked', async () => {
-    editor.setConfig({ map_provider: 'osm_default', theme_mode: 'auto', entities: [], zones: [] });
+    editor.setConfig({ entities: [], map_provider: 'osm_default', theme_mode: 'auto', zones: [] });
     await editor.updateComplete;
 
     let firedConfig: TestConfig = {} as TestConfig;
@@ -159,10 +169,10 @@ describe('RouteTrackerCardEditor', () => {
 
   it('updates an entity and name', async () => {
     editor.setConfig({
+      entities: [{ entity: 'person.old', name: 'Old Name' }],
       map_provider: 'osm_default',
       theme_mode: 'auto',
-      entities: [{ entity: 'person.old', name: 'Old Name' }],
-      zones: []
+      zones: [],
     });
     await editor.updateComplete;
 
@@ -187,10 +197,10 @@ describe('RouteTrackerCardEditor', () => {
 
   it('removes an entity', async () => {
     editor.setConfig({
+      entities: [{ entity: 'person.test', name: 'Test Name' }],
       map_provider: 'osm_default',
       theme_mode: 'auto',
-      entities: [{ entity: 'person.test', name: 'Test Name' }],
-      zones: []
+      zones: [],
     });
     await editor.updateComplete;
 
@@ -208,13 +218,13 @@ describe('RouteTrackerCardEditor', () => {
 
   it('handles drag and drop operations', async () => {
     editor.setConfig({
-      map_provider: 'osm_default',
-      theme_mode: 'auto',
       entities: [
         { entity: 'person.1', name: 'One' },
-        { entity: 'person.2', name: 'Two' }
+        { entity: 'person.2', name: 'Two' },
       ],
-      zones: []
+      map_provider: 'osm_default',
+      theme_mode: 'auto',
+      zones: [],
     });
     await editor.updateComplete;
 
@@ -233,7 +243,10 @@ describe('RouteTrackerCardEditor', () => {
     Object.defineProperty(dragStartEvent, 'dataTransfer', { value: { effectAllowed: '' } });
     row0.dispatchEvent(dragStartEvent);
     expect(row0.classList.contains('dragging')).toBe(true);
-    expect((dragStartEvent as unknown as { dataTransfer: { effectAllowed: string } }).dataTransfer.effectAllowed).toBe('move');
+    expect(
+      (dragStartEvent as unknown as { dataTransfer: { effectAllowed: string } }).dataTransfer
+        .effectAllowed,
+    ).toBe('move');
 
     const dragOverEvent = new Event('dragover') as Event;
     Object.defineProperty(dragOverEvent, 'dataTransfer', { value: { dropEffect: '' } });
@@ -263,14 +276,16 @@ describe('RouteTrackerCardEditor', () => {
 
   it('filters entities correctly', async () => {
     editor.setConfig({
+      entities: [{ entity: '', name: '' }],
       map_provider: 'osm_default',
       theme_mode: 'auto',
-      entities: [{ entity: '', name: '' }],
-      zones: []
+      zones: [],
     });
     await editor.updateComplete;
 
-    const picker = editor.shadowRoot?.querySelector('ha-entity-picker') as unknown as { entityFilter: (stateObj: { entity_id: string }) => boolean };
+    const picker = editor.shadowRoot?.querySelector('ha-entity-picker') as unknown as {
+      entityFilter: (stateObj: { entity_id: string }) => boolean;
+    };
     expect(picker.entityFilter).toBeDefined();
 
     expect(picker.entityFilter({ entity_id: 'person.unknown' })).toBe(false);
@@ -278,14 +293,14 @@ describe('RouteTrackerCardEditor', () => {
 
   it('renders entity error in HTML when entity is invalid', async () => {
     Object.assign(editor.hass.states, {
-      'person.invalid_for_html': { state: 'home', attributes: {} } as TestEntityState
+      'person.invalid_for_html': { attributes: {}, state: 'home' } as TestEntityState,
     });
 
     editor.setConfig({
+      entities: [{ entity: 'person.invalid_for_html', name: '' }],
       map_provider: 'osm_default',
       theme_mode: 'auto',
-      entities: [{ entity: 'person.invalid_for_html', name: '' }],
-      zones: []
+      zones: [],
     });
     await editor.updateComplete;
 
@@ -297,13 +312,18 @@ describe('RouteTrackerCardEditor', () => {
   it('handles drag and drop edge cases and state guards', () => {
     editor.setConfig({
       map_provider: 'osm_default',
-      theme_mode: 'auto'
+      theme_mode: 'auto',
     });
 
     type EditorMethods = {
       _addItem: (section: 'entities' | 'zones') => void;
       _removeItem: (section: 'entities' | 'zones', index: number) => void;
-      _updateItem: (section: 'entities' | 'zones', index: number, field: 'entity' | 'name', value: string) => void;
+      _updateItem: (
+        section: 'entities' | 'zones',
+        index: number,
+        field: 'entity' | 'name',
+        value: string,
+      ) => void;
       _onDrop: (targetIndex: number, section: 'entities' | 'zones', e: Event) => void;
       _onDragLeave: (e: Event) => void;
       _onDragStart: (index: number, section: 'entities' | 'zones', e: DragEvent) => void;
@@ -326,7 +346,7 @@ describe('RouteTrackerCardEditor', () => {
     (editor as unknown as { _dragIndex: number })._dragIndex = 0;
     (editor as unknown as { _dragSection: string })._dragSection = 'entities';
     methods._onDrop(1, 'entities', dropEvent);
-    editor.setConfig({ map_provider: 'osm_default', entities: [] });
+    editor.setConfig({ entities: [], map_provider: 'osm_default' });
 
     const dummyTarget = document.createElement('div');
     methods._onDragLeave({ target: dummyTarget } as unknown as DragEvent);
@@ -348,10 +368,10 @@ describe('RouteTrackerCardEditor', () => {
 
   it('renders zones without errors', async () => {
     editor.setConfig({
+      entities: [],
       map_provider: 'osm_default',
       theme_mode: 'auto',
-      entities: [],
-      zones: [{ entity: 'zone.home', name: 'Home' }]
+      zones: [{ entity: 'zone.home', name: 'Home' }],
     });
     await editor.updateComplete;
 
@@ -363,10 +383,10 @@ describe('RouteTrackerCardEditor', () => {
 
   it('renders entity without entity string', async () => {
     editor.setConfig({
+      entities: [{ name: 'Missing Entity String' } as unknown as RouteEntityConfig],
       map_provider: 'osm_default',
       theme_mode: 'auto',
-      entities: [{ name: 'Missing Entity String' } as unknown as RouteEntityConfig],
-      zones: []
+      zones: [],
     });
     await editor.updateComplete;
 
@@ -415,7 +435,7 @@ describe('RouteTrackerCardEditor', () => {
   it('fires config-changed when route_origin changes', async () => {
     editor.setConfig({ enable_routing: true, route_origin: 'device' });
     Object.assign(editor.hass.states, {
-      'zone.home': { state: 'zoning', attributes: { friendly_name: 'Home' } } as TestEntityState
+      'zone.home': { attributes: { friendly_name: 'Home' }, state: 'zoning' } as TestEntityState,
     });
     await editor.updateComplete;
 
@@ -454,7 +474,7 @@ describe('RouteTrackerCardEditor', () => {
   it('handles zones without friendly_name and invalid routing_provider gracefully', async () => {
     editor.setConfig({ enable_routing: true, route_origin: 'device', routing_provider: 'invalid' });
     Object.assign(editor.hass.states, {
-      'zone.no_name': { state: 'zoning', attributes: {} } as TestEntityState
+      'zone.no_name': { attributes: {}, state: 'zoning' } as TestEntityState,
     });
     await editor.updateComplete;
 
@@ -462,10 +482,12 @@ describe('RouteTrackerCardEditor', () => {
     const originSelect = selects![2] as HTMLSelectElement;
 
     const options = originSelect.querySelectorAll('option');
-    const noNameOption = Array.from(options).find(opt => opt.value === 'zone.no_name');
+    const noNameOption = Array.from(options).find((opt) => opt.value === 'zone.no_name');
     expect(noNameOption?.textContent?.trim()).toBe('zone.no_name');
 
-    const providerLink = editor.shadowRoot?.querySelector('.routing-provider-info a') as HTMLAnchorElement;
+    const providerLink = editor.shadowRoot?.querySelector(
+      '.routing-provider-info a',
+    ) as HTMLAnchorElement;
     expect(providerLink.href).toContain('openstreetmap');
   });
 });

@@ -1,6 +1,6 @@
-import { css } from 'lit';
+import { type CSSResult, css } from 'lit';
 
-export const mapFiltersStyles = css`
+export const mapFiltersStyles: CSSResult = css`
   #map.dark-mode {
     filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
   }

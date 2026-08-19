@@ -1,6 +1,6 @@
-import { css } from 'lit';
+import { type CSSResult, css } from 'lit';
 
-export const editorStyles = css`
+export const editorStyles: CSSResult = css`
   .card-config {
     display: flex;
     flex-direction: column;

@@ -1,6 +1,6 @@
-import { css } from 'lit';
+import { type CSSResult, css } from 'lit';
 
-export const popupRoutingStyles = css`
+export const popupRoutingStyles: CSSResult = css`
   .rt-popup-route-btn {
     cursor: pointer;
     padding: 0;

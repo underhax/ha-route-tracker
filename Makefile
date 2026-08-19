@@ -12,6 +12,12 @@ install:
 	uv pip install -r .github/requirements_test.txt
 	npm --prefix frontend ci --ignore-scripts
 
+frontend-biome:
+	cd frontend && biome ci .
+
+frontend-biome-fix:
+	cd frontend && biome check --write src
+
 lint:
 	npm --prefix frontend exec -- tsc --project frontend/tsconfig.json --noEmit
 

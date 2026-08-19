@@ -20,16 +20,13 @@ export function toVirtualSensorId(entityId: string): string {
   return objectId ? `sensor.virtual_device_tracker_${objectId}` : '';
 }
 
-export function isSelectedTracker(
-  entityId: string,
-  states: RouteTrackerStates
-): boolean {
+export function isSelectedTracker(entityId: string, states: RouteTrackerStates): boolean {
   return entityId.startsWith('device_tracker.') && Boolean(states[toVirtualSensorId(entityId)]);
 }
 
 export function getSelectedTrackersForPerson(
   personState: RouteTrackerEntityState | undefined,
-  states: RouteTrackerStates
+  states: RouteTrackerStates,
 ): string[] {
   const deviceTrackers = personState?.attributes?.['device_trackers'];
 
@@ -39,18 +36,16 @@ export function getSelectedTrackersForPerson(
 
   return deviceTrackers.filter(
     (entityId): entityId is string =>
-      typeof entityId === 'string' && isSelectedTracker(entityId, states)
+      typeof entityId === 'string' && isSelectedTracker(entityId, states),
   );
 }
 
 export function getRouteEntityEligibility(
   entityId: string,
-  states: RouteTrackerStates
+  states: RouteTrackerStates,
 ): RouteEntityEligibility {
   if (entityId.startsWith('device_tracker.')) {
-    return isSelectedTracker(entityId, states)
-      ? 'eligible'
-      : 'unsupported_tracker';
+    return isSelectedTracker(entityId, states) ? 'eligible' : 'unsupported_tracker';
   }
 
   if (entityId.startsWith('person.')) {
@@ -62,16 +57,11 @@ export function getRouteEntityEligibility(
   return 'unsupported_entity';
 }
 
-export function isEligibleRouteEntity(
-  entityId: string,
-  states: RouteTrackerStates
-): boolean {
+export function isEligibleRouteEntity(entityId: string, states: RouteTrackerStates): boolean {
   return getRouteEntityEligibility(entityId, states) === 'eligible';
 }
 
-export function getEligibleRouteEntities(
-  states: RouteTrackerStates
-): EligibleRouteEntity[] {
+export function getEligibleRouteEntities(states: RouteTrackerStates): EligibleRouteEntity[] {
   const eligibleEntities: EligibleRouteEntity[] = [];
 
   for (const [entityId, state] of Object.entries(states)) {

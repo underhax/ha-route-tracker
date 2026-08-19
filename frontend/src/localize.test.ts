@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { localize } from './localize';
+import { localize } from './localize.ts';
 
 describe('localize()', () => {
   it('returns translation for a known key and language', () => {

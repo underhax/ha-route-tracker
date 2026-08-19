@@ -1,35 +1,35 @@
-import { defineConfig } from 'vitest/config';
-
-import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
 import { compression } from 'vite-plugin-compression2';
 
+import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
+import { defineConfig } from 'vitest/config';
+
 export default defineConfig({
-  plugins: [
-    cssInjectedByJsPlugin(),
-    compression({
-      algorithms: ['gzip', 'brotliCompress'],
-      threshold: 1025
-    })
-  ],
   build: {
     emptyOutDir: true,
-    outDir: '../custom_components/route_tracker/www',
     lib: {
       entry: new URL('./src/route-tracker-card.ts', import.meta.url).pathname,
-      name: 'RouteTrackerCard',
       fileName: () => 'route-tracker-card.js',
-      formats: ['es']
+      formats: ['es'],
+      name: 'RouteTrackerCard',
     },
+    outDir: '../custom_components/route_tracker/www',
     rollupOptions: {
       external: [],
     },
   },
+  plugins: [
+    cssInjectedByJsPlugin(),
+    compression({
+      algorithms: ['gzip', 'brotliCompress'],
+      threshold: 1025,
+    }),
+  ],
   test: {
-    environment: 'happy-dom',
     coverage: {
-      provider: 'v8',
       include: ['src/**/*.ts'],
+      provider: 'v8',
       reporter: ['text'],
     },
+    environment: 'happy-dom',
   },
 });

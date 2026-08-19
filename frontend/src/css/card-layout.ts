@@ -1,6 +1,6 @@
-import { css } from 'lit';
+import { type CSSResult, css } from 'lit';
 
-export const cardLayoutStyles = css`
+export const cardLayoutStyles: CSSResult = css`
   :host {
     --route-tracker-header-height: 56px;
     --route-tracker-edit-header-height: 114px;

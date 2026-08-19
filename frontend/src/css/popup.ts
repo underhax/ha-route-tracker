@@ -1,6 +1,6 @@
-import { css } from 'lit';
+import { type CSSResult, css } from 'lit';
 
-export const popupStyles = css`
+export const popupStyles: CSSResult = css`
   .rt-popup-container {
     display: flex;
     flex-direction: column;

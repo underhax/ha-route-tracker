@@ -1,8 +1,8 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import * as L from 'leaflet';
-import { RouteTrackerCard } from './route-tracker-card';
 import type { HomeAssistant } from 'custom-card-helpers';
-import * as mapProviders from './utils/map-providers';
+import * as L from 'leaflet';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { RouteTrackerCard } from './route-tracker-card.ts';
+import * as mapProviders from './utils/map-providers.ts';
 
 describe('RouteTrackerCard', () => {
   let card: RouteTrackerCard;
@@ -10,15 +10,15 @@ describe('RouteTrackerCard', () => {
 
   beforeEach(() => {
     mockHass = {
-      states: {},
-      language: 'en',
+      callApi: vi.fn(),
       config: {
         latitude: 0,
         longitude: 0,
-        time_zone: 'UTC'
+        time_zone: 'UTC',
       },
-      callApi: vi.fn(),
-      themes: { darkMode: false }
+      language: 'en',
+      states: {},
+      themes: { darkMode: false },
     } as unknown as HomeAssistant;
 
     card = new RouteTrackerCard();
@@ -121,8 +121,15 @@ describe('RouteTrackerCard', () => {
   describe('loadDevices', () => {
     it('filters out invalid entities from config', async () => {
       mockHass.states = {
-        'device_tracker.valid': { entity_id: 'device_tracker.valid', state: 'home', attributes: {} } as any,
-        'sensor.virtual_device_tracker_valid': { entity_id: 'sensor.virtual_device_tracker_valid', state: '1' } as any
+        'device_tracker.valid': {
+          attributes: {},
+          entity_id: 'device_tracker.valid',
+          state: 'home',
+        } as any,
+        'sensor.virtual_device_tracker_valid': {
+          entity_id: 'sensor.virtual_device_tracker_valid',
+          state: '1',
+        } as any,
       };
 
       card.setConfig({
@@ -132,8 +139,8 @@ describe('RouteTrackerCard', () => {
           { invalid: 'object' },
           'string_instead_of_object',
           null,
-          undefined
-        ]
+          undefined,
+        ],
       } as any);
       (card as any).loadDevices();
       await card.updateComplete;
@@ -145,11 +152,20 @@ describe('RouteTrackerCard', () => {
     });
 
     it('keeps selectedDevice if it is still valid after loadDevices', async () => {
-      card.setConfig({ entities: [{ entity: 'device_tracker.test' }, { entity: 'device_tracker.other' }] });
+      card.setConfig({
+        entities: [{ entity: 'device_tracker.test' }, { entity: 'device_tracker.other' }],
+      });
       await card.updateComplete;
 
-      mockHass.states['device_tracker.other'] = { entity_id: 'device_tracker.other', state: 'home', attributes: { latitude: 10, longitude: 10 } } as any;
-      mockHass.states['sensor.virtual_device_tracker_other'] = { entity_id: 'sensor.virtual_device_tracker_other', state: '100' } as any;
+      mockHass.states['device_tracker.other'] = {
+        attributes: { latitude: 10, longitude: 10 },
+        entity_id: 'device_tracker.other',
+        state: 'home',
+      } as any;
+      mockHass.states['sensor.virtual_device_tracker_other'] = {
+        entity_id: 'sensor.virtual_device_tracker_other',
+        state: '100',
+      } as any;
       (card as any).selectedDevice = 'device_tracker.other';
       (card as any).loadDevices();
 
@@ -158,9 +174,20 @@ describe('RouteTrackerCard', () => {
 
     it('falls back to auto-discovered eligible entities if config.entities is empty', async () => {
       mockHass.states = {
-        'device_tracker.auto1': { entity_id: 'device_tracker.auto1', state: 'home', attributes: { friendly_name: 'Auto 1' } } as any,
-        'sensor.virtual_device_tracker_auto1': { entity_id: 'sensor.virtual_device_tracker_auto1', state: '1' } as any,
-        'person.auto2': { entity_id: 'person.auto2', state: 'home', attributes: { device_trackers: ['device_tracker.auto1'] } } as any
+        'device_tracker.auto1': {
+          attributes: { friendly_name: 'Auto 1' },
+          entity_id: 'device_tracker.auto1',
+          state: 'home',
+        } as any,
+        'person.auto2': {
+          attributes: { device_trackers: ['device_tracker.auto1'] },
+          entity_id: 'person.auto2',
+          state: 'home',
+        } as any,
+        'sensor.virtual_device_tracker_auto1': {
+          entity_id: 'sensor.virtual_device_tracker_auto1',
+          state: '1',
+        } as any,
       };
 
       card.setConfig({ entities: [] } as any);
@@ -176,8 +203,15 @@ describe('RouteTrackerCard', () => {
     });
 
     it('falls back to first device if selectedDevice is no longer valid', async () => {
-      mockHass.states['device_tracker.valid'] = { entity_id: 'device_tracker.valid', state: 'home', attributes: { latitude: 10, longitude: 10 } } as any;
-      mockHass.states['sensor.virtual_device_tracker_valid'] = { entity_id: 'sensor.virtual_device_tracker_valid', state: '1' } as any;
+      mockHass.states['device_tracker.valid'] = {
+        attributes: { latitude: 10, longitude: 10 },
+        entity_id: 'device_tracker.valid',
+        state: 'home',
+      } as any;
+      mockHass.states['sensor.virtual_device_tracker_valid'] = {
+        entity_id: 'sensor.virtual_device_tracker_valid',
+        state: '1',
+      } as any;
       card.setConfig({ entities: [{ entity: 'device_tracker.valid' }] } as any);
       (card as any).selectedDevice = 'device_tracker.nonexistent';
 
@@ -206,7 +240,7 @@ describe('RouteTrackerCard', () => {
 
       const input = card.shadowRoot?.querySelector('input[type="date"]') as HTMLInputElement;
       expect(input).not.toBeNull();
-      expect(input.max).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(input.max).toMatch(/^\d{4}-\d{2}-\d{2}$/u);
     });
 
     it('observes map container resize', async () => {
@@ -219,7 +253,9 @@ describe('RouteTrackerCard', () => {
       const originalRO = window.ResizeObserver;
       let roCallback: (() => void) | null = null;
       window.ResizeObserver = class {
-        constructor(cb: () => void) { roCallback = cb; }
+        constructor(cb: () => void) {
+          roCallback = cb;
+        }
         observe() {}
         disconnect() {}
       } as any;
@@ -239,7 +275,7 @@ describe('RouteTrackerCard', () => {
         (roCallback as () => void)();
       }
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
       expect((card as any).map.invalidateSize).toHaveBeenCalled();
 
       window.requestAnimationFrame = originalRaf;
@@ -304,7 +340,9 @@ describe('RouteTrackerCard', () => {
       const originalMO = window.MutationObserver;
       let moCallback: (() => void) | null = null;
       window.MutationObserver = class {
-        constructor(cb: () => void) { moCallback = cb; }
+        constructor(cb: () => void) {
+          moCallback = cb;
+        }
         observe() {}
         disconnect() {}
       } as any;
@@ -333,7 +371,9 @@ describe('RouteTrackerCard', () => {
       const originalMO = window.MutationObserver;
       let moCallback: (() => void) | null = null;
       window.MutationObserver = class {
-        constructor(cb: () => void) { moCallback = cb; }
+        constructor(cb: () => void) {
+          moCallback = cb;
+        }
         observe() {}
         disconnect() {}
       } as any;
@@ -381,7 +421,9 @@ describe('RouteTrackerCard', () => {
       const originalRO = window.ResizeObserver;
       let roCallback: (() => void) | null = null;
       window.ResizeObserver = class {
-        constructor(cb: () => void) { roCallback = cb; }
+        constructor(cb: () => void) {
+          roCallback = cb;
+        }
         observe() {}
         disconnect() {}
       } as any;
@@ -518,7 +560,7 @@ describe('RouteTrackerCard', () => {
       (card as any).map.fitBounds = vi.fn();
 
       if (controls) {
-        controls.forEach(c => {
+        controls.forEach((c) => {
           if ((c as any).onclick) {
             (c as any).onclick({ preventDefault: () => {}, stopPropagation: () => {} });
           } else {
@@ -557,25 +599,25 @@ describe('RouteTrackerCard', () => {
     it('draws zones on map', async () => {
       mockHass.states = {
         'zone.home': {
+          attributes: { friendly_name: 'Home Zone', latitude: 50.1, longitude: 30.1, radius: 100 },
           entity_id: 'zone.home',
           state: 'zoning',
-          attributes: { latitude: 50.1, longitude: 30.1, radius: 100, friendly_name: 'Home Zone' }
-        } as any,
-        'zone.noradius': {
-          entity_id: 'zone.noradius',
-          state: 'zoning',
-          attributes: { latitude: 50.2, longitude: 30.2, friendly_name: 'No Radius Zone' }
         } as any,
         'zone.nofriendly': {
+          attributes: { latitude: 50.3, longitude: 30.3 },
           entity_id: 'zone.nofriendly',
           state: 'zoning',
-          attributes: { latitude: 50.3, longitude: 30.3 }
         } as any,
         'zone.nolatlon': {
+          attributes: { friendly_name: 'No Lat Lon Zone' },
           entity_id: 'zone.nolatlon',
           state: 'zoning',
-          attributes: { friendly_name: 'No Lat Lon Zone' }
-        } as any
+        } as any,
+        'zone.noradius': {
+          attributes: { friendly_name: 'No Radius Zone', latitude: 50.2, longitude: 30.2 },
+          entity_id: 'zone.noradius',
+          state: 'zoning',
+        } as any,
       };
 
       card.setConfig({
@@ -585,8 +627,8 @@ describe('RouteTrackerCard', () => {
           { entity: 'zone.noradius' },
           { entity: 'zone.nofriendly' },
           { entity: 'zone.missing' },
-          { entity: 'zone.nolatlon' }
-        ]
+          { entity: 'zone.nolatlon' },
+        ],
       });
       await card.updateComplete;
       (card as any).drawZones();
@@ -601,12 +643,15 @@ describe('RouteTrackerCard', () => {
 
       const mapContainer = card.shadowRoot?.getElementById('map');
       if (mapContainer) {
-        Object.defineProperty(mapContainer, 'parentElement', { value: null, configurable: true });
+        Object.defineProperty(mapContainer, 'parentElement', { configurable: true, value: null });
         if ((card as any).map) {
           (card as any).map.remove();
         }
         expect(() => (card as any).initMap()).not.toThrow();
-        Object.defineProperty(mapContainer, 'parentElement', { value: card.shadowRoot?.querySelector('.card-content'), configurable: true });
+        Object.defineProperty(mapContainer, 'parentElement', {
+          configurable: true,
+          value: card.shadowRoot?.querySelector('.card-content'),
+        });
       }
     });
 
@@ -628,8 +673,8 @@ describe('RouteTrackerCard', () => {
 
     it('skips zones without valid coordinates', async () => {
       mockHass.states['zone.invalid'] = {
+        attributes: { friendly_name: 'Invalid Zone' },
         entity_id: 'zone.invalid',
-        attributes: { friendly_name: 'Invalid Zone' }
       } as any;
       card.setConfig({ entities: [], zones: [{ entity: 'zone.invalid' }] });
       await card.updateComplete;
@@ -643,7 +688,7 @@ describe('RouteTrackerCard', () => {
       await card.updateComplete;
 
       let loc = (card as any).resolveLocation({
-        attributes: { latitude: 12.34, longitude: 56.78 }
+        attributes: { latitude: 12.34, longitude: 56.78 },
       });
       expect(loc).toEqual([12.34, 56.78]);
 
@@ -651,20 +696,20 @@ describe('RouteTrackerCard', () => {
       expect(loc).toBeNull();
 
       mockHass.states['zone.work'] = {
-        attributes: { latitude: 44.44, longitude: 55.55 }
+        attributes: { latitude: 44.44, longitude: 55.55 },
       } as any;
       loc = (card as any).resolveLocation({
+        attributes: {},
         state: 'work',
-        attributes: {}
       });
       expect(loc).toEqual([44.44, 55.55]);
 
       mockHass.states['zone.invalid_loc'] = {
-        attributes: { latitude: 'invalid', longitude: 'invalid' }
+        attributes: { latitude: 'invalid', longitude: 'invalid' },
       } as any;
       loc = (card as any).resolveLocation({
+        attributes: {},
         state: 'invalid_loc',
-        attributes: {}
       });
       expect(loc).toBeNull();
 
@@ -675,9 +720,9 @@ describe('RouteTrackerCard', () => {
   describe('History API', () => {
     beforeEach(() => {
       mockHass.states['device_tracker.test'] = {
+        attributes: { latitude: 10, longitude: 10 },
         entity_id: 'device_tracker.test',
         state: 'home',
-        attributes: { latitude: 10, longitude: 10 }
       } as any;
     });
 
@@ -705,11 +750,14 @@ describe('RouteTrackerCard', () => {
 
       mockHass.callApi = vi.fn().mockResolvedValue([
         [
-          { last_updated: '1970-01-01T10:00:00Z', attributes: { latitude: 10, longitude: 10 } },
-          { last_updated: '1970-01-01T10:05:00Z', attributes: { latitude: 'invalid', longitude: 'invalid' } }
+          { attributes: { latitude: 10, longitude: 10 }, last_updated: '1970-01-01T10:00:00Z' },
+          {
+            attributes: { latitude: 'invalid', longitude: 'invalid' },
+            last_updated: '1970-01-01T10:05:00Z',
+          },
         ],
         null,
-        { not: 'array' }
+        { not: 'array' },
       ]);
 
       await (card as any).fetchAndDrawRoute();
@@ -719,16 +767,26 @@ describe('RouteTrackerCard', () => {
     it('fetches history and draws route on update', async () => {
       mockHass.callApi = vi.fn().mockResolvedValue([
         [
-          { entity_id: 'device_tracker.test', state: 'not_home', attributes: { latitude: 10, longitude: 10 }, last_updated: '1970-01-01T12:00:00Z' },
-          { entity_id: 'device_tracker.test', state: 'not_home', attributes: { latitude: 10.001, longitude: 10.001 }, last_updated: '1970-01-01T12:05:00Z' }
-        ]
+          {
+            attributes: { latitude: 10, longitude: 10 },
+            entity_id: 'device_tracker.test',
+            last_updated: '1970-01-01T12:00:00Z',
+            state: 'not_home',
+          },
+          {
+            attributes: { latitude: 10.001, longitude: 10.001 },
+            entity_id: 'device_tracker.test',
+            last_updated: '1970-01-01T12:05:00Z',
+            state: 'not_home',
+          },
+        ],
       ]);
 
       mockHass.states['device_tracker.test'] = {
-        entity_id: 'device_tracker.test',
-        state: 'home',
         attributes: { latitude: 10.002, longitude: 10.002 },
-        last_updated: '1970-01-01T12:10:00Z'
+        entity_id: 'device_tracker.test',
+        last_updated: '1970-01-01T12:10:00Z',
+        state: 'home',
       } as any;
 
       card.setConfig({ entities: [{ entity: 'device_tracker.test' }], minimal_distance: 0 });
@@ -736,7 +794,7 @@ describe('RouteTrackerCard', () => {
       (card as any).selectedDate = '1970-01-01';
       await card.updateComplete;
 
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise((resolve) => setTimeout(resolve, 150));
 
       expect(mockHass.callApi).toHaveBeenCalled();
       const callArgs = (mockHass.callApi as any).mock.calls[0];
@@ -750,22 +808,22 @@ describe('RouteTrackerCard', () => {
 
     it('expands person entities and fetches history for sub-trackers', async () => {
       mockHass.states['person.john'] = {
-        entity_id: 'person.john',
-        state: 'home',
         attributes: { device_trackers: ['device_tracker.phone'] },
-        last_updated: '1970-01-01T12:10:00Z'
+        entity_id: 'person.john',
+        last_updated: '1970-01-01T12:10:00Z',
+        state: 'home',
       } as any;
       mockHass.states['device_tracker.phone'] = {
-        entity_id: 'device_tracker.phone',
-        state: 'home',
         attributes: { latitude: 20, longitude: 20 },
-        last_updated: '1970-01-01T12:10:00Z'
+        entity_id: 'device_tracker.phone',
+        last_updated: '1970-01-01T12:10:00Z',
+        state: 'home',
       } as any;
       mockHass.states['sensor.virtual_device_tracker_phone'] = {
-        entity_id: 'sensor.virtual_device_tracker_phone',
-        state: 'home',
         attributes: { latitude: 21, longitude: 21 },
-        last_updated: '1970-01-01T12:15:00Z'
+        entity_id: 'sensor.virtual_device_tracker_phone',
+        last_updated: '1970-01-01T12:15:00Z',
+        state: 'home',
       } as any;
 
       card.setConfig({ entities: [{ entity: 'person.john' }] });
@@ -775,14 +833,17 @@ describe('RouteTrackerCard', () => {
       (card as any).selectedDate = '1970-01-01';
       await card.updateComplete;
 
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise((resolve) => setTimeout(resolve, 150));
 
       expect(mockHass.callApi).toHaveBeenCalled();
       const callArgs = (mockHass.callApi as any).mock.calls[0];
       expect(callArgs[1]).not.toContain('person.john');
       expect(callArgs[1]).not.toContain('device_tracker.phone');
       expect(callArgs[1]).toContain('sensor.virtual_device_tracker_phone');
-      expect(mockHass.callApi).toHaveBeenCalledWith('GET', expect.stringContaining('filter_entity_id=sensor.virtual_device_tracker_phone'));
+      expect(mockHass.callApi).toHaveBeenCalledWith(
+        'GET',
+        expect.stringContaining('filter_entity_id=sensor.virtual_device_tracker_phone'),
+      );
 
       const points = (card as any)._lastPoints;
       expect(points.length).toBeGreaterThan(0);
@@ -793,15 +854,23 @@ describe('RouteTrackerCard', () => {
     it('filters out points based on minimal_distance', async () => {
       mockHass.callApi = vi.fn().mockResolvedValue([
         [
-          { entity_id: 'device_tracker.test', attributes: { latitude: 10.0, longitude: 10.0 }, last_updated: '1970-01-01T12:00:00Z' },
-          { entity_id: 'device_tracker.test', attributes: { latitude: 10.0000001, longitude: 10.0000001 }, last_updated: '1970-01-01T12:05:00Z' }
-        ]
+          {
+            attributes: { latitude: 10.0, longitude: 10.0 },
+            entity_id: 'device_tracker.test',
+            last_updated: '1970-01-01T12:00:00Z',
+          },
+          {
+            attributes: { latitude: 10.0000001, longitude: 10.0000001 },
+            entity_id: 'device_tracker.test',
+            last_updated: '1970-01-01T12:05:00Z',
+          },
+        ],
       ]);
       mockHass.states['device_tracker.test'] = {
-        entity_id: 'device_tracker.test',
-        state: 'home',
         attributes: { latitude: 10.0, longitude: 10.0 },
-        last_updated: '1970-01-01T12:10:00Z'
+        entity_id: 'device_tracker.test',
+        last_updated: '1970-01-01T12:10:00Z',
+        state: 'home',
       } as any;
 
       card.setConfig({ entities: [{ entity: 'device_tracker.test' }], minimal_distance: 5000 });
@@ -811,7 +880,7 @@ describe('RouteTrackerCard', () => {
       (card as any).selectedDate = '1970-01-01';
       await card.updateComplete;
 
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise((resolve) => setTimeout(resolve, 150));
 
       const points = (card as any)._lastPoints;
       expect(points.length).toBe(1);
@@ -826,7 +895,7 @@ describe('RouteTrackerCard', () => {
       (card as any).selectedDate = '1970-01-01';
       await card.updateComplete;
 
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise((resolve) => setTimeout(resolve, 150));
 
       expect(mockHass.callApi).toHaveBeenCalled();
     });
@@ -834,10 +903,10 @@ describe('RouteTrackerCard', () => {
     it('handles empty history but valid current state', async () => {
       mockHass.callApi = vi.fn().mockResolvedValue([]);
       mockHass.states['device_tracker.test'] = {
-        entity_id: 'device_tracker.test',
-        state: 'home',
         attributes: { latitude: 10.0, longitude: 10.0 },
-        last_updated: '1970-01-01T12:10:00Z'
+        entity_id: 'device_tracker.test',
+        last_updated: '1970-01-01T12:10:00Z',
+        state: 'home',
       } as any;
 
       card.setConfig({ entities: [{ entity: 'device_tracker.test' }], minimal_distance: 0 });
@@ -847,7 +916,7 @@ describe('RouteTrackerCard', () => {
       (card as any).selectedDate = '1970-01-01';
       await card.updateComplete;
 
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise((resolve) => setTimeout(resolve, 150));
 
       const points = (card as any)._lastPoints;
       expect(points.length).toBe(1);
@@ -858,16 +927,16 @@ describe('RouteTrackerCard', () => {
     it('handles person with no virtual sensors gracefully', async () => {
       mockHass.callApi = vi.fn().mockResolvedValue([]);
       mockHass.states['person.jane'] = {
-        entity_id: 'person.jane',
-        state: 'home',
         attributes: { device_trackers: ['device_tracker.laptop'], latitude: 30, longitude: 30 },
-        last_updated: '1970-01-01T12:00:00Z'
+        entity_id: 'person.jane',
+        last_updated: '1970-01-01T12:00:00Z',
+        state: 'home',
       } as any;
       mockHass.states['device_tracker.laptop'] = {
-        entity_id: 'device_tracker.laptop',
-        state: 'home',
         attributes: { latitude: 30, longitude: 30 },
-        last_updated: '1970-01-01T12:10:00Z'
+        entity_id: 'device_tracker.laptop',
+        last_updated: '1970-01-01T12:10:00Z',
+        state: 'home',
       } as any;
 
       card.setConfig({ entities: [{ entity: 'person.jane' }] });
@@ -877,7 +946,7 @@ describe('RouteTrackerCard', () => {
       (card as any).selectedDate = '1970-01-01';
       await card.updateComplete;
 
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise((resolve) => setTimeout(resolve, 150));
 
       const points = (card as any)._lastPoints;
       expect(points.length).toBeGreaterThan(0);
@@ -891,7 +960,7 @@ describe('RouteTrackerCard', () => {
       const mapContainer = card.shadowRoot?.getElementById('map');
       const controls = mapContainer?.querySelectorAll('.leaflet-control a');
       if (controls) {
-        controls.forEach(c => {
+        controls.forEach((c) => {
           (c as HTMLElement).click();
         });
       }

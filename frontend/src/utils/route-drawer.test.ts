@@ -1,6 +1,11 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
 import * as L from 'leaflet';
-import { calculateDistance, drawRouteOnMap, DrawRouteOptions, RoutePoint } from './route-drawer';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  calculateDistance,
+  type DrawRouteOptions,
+  drawRouteOnMap,
+  type RoutePoint,
+} from './route-drawer.ts';
 
 describe('RouteDrawer', () => {
   describe('calculateDistance()', () => {
@@ -12,10 +17,10 @@ describe('RouteDrawer', () => {
 
     it('calculates distance correctly over a large random dataset', () => {
       for (let i = 0; i < 10000; i++) {
-        const lat1 = (Math.random() * 180) - 90;
-        const lon1 = (Math.random() * 360) - 180;
-        const lat2 = (Math.random() * 180) - 90;
-        const lon2 = (Math.random() * 360) - 180;
+        const lat1 = Math.random() * 180 - 90;
+        const lon1 = Math.random() * 360 - 180;
+        const lat2 = Math.random() * 180 - 90;
+        const lon2 = Math.random() * 360 - 180;
 
         const dist = calculateDistance(lat1, lon1, lat2, lon2);
         expect(dist).not.toBeNaN();
@@ -37,28 +42,28 @@ describe('RouteDrawer', () => {
       localize = vi.fn((key: string) => `trans_${key}`);
 
       baseOptions = {
-        points: [],
-        map,
-        routeLayer,
-        isSatellite: false,
-        isDarkMode: false,
         currentProvider: 'OpenStreetMap',
-        localize,
-        language: 'en',
-        fallbackLat: 10,
-        fallbackLon: 20,
-        routingProvider: 'osm',
         enableGeocoding: false,
         enableRouting: false,
+        fallbackLat: 10,
+        fallbackLon: 20,
+        hass: { states: {} },
+        isDarkMode: false,
+        isSatellite: false,
+        language: 'en',
+        localize,
+        map,
+        points: [],
+        routeLayer,
         routeOrigin: 'disabled',
-        hass: { states: {} }
+        routingProvider: 'osm',
       };
 
       if (!(window as any).L) {
         (window as any).L = {};
       }
       (window as any).L.polylineDecorator = vi.fn(() => ({
-        addTo: vi.fn()
+        addTo: vi.fn(),
       }));
       if (!(window as any).L.Symbol) {
         (window as any).L.Symbol = {};
@@ -81,9 +86,7 @@ describe('RouteDrawer', () => {
     });
 
     it('draws a single route point', () => {
-      const points: RoutePoint[] = [
-        { loc: L.latLng(0, 0), timestamp: 'time1' }
-      ];
+      const points: RoutePoint[] = [{ loc: L.latLng(0, 0), timestamp: 'time1' }];
       const result = drawRouteOnMap({ ...baseOptions, points });
       expect(result).toBeDefined();
       expect(routeLayer.getLayers().length).toBeGreaterThan(0);
@@ -93,13 +96,31 @@ describe('RouteDrawer', () => {
       const points: RoutePoint[] = [
         { loc: L.latLng(0, 0), timestamp: 'time1' },
         { loc: L.latLng(1, 1), timestamp: 'time2' },
-        { loc: L.latLng(2, 2), timestamp: 'time3' }
+        { loc: L.latLng(2, 2), timestamp: 'time3' },
       ];
 
-      drawRouteOnMap({ ...baseOptions, points, isSatellite: true });
-      drawRouteOnMap({ ...baseOptions, points, isSatellite: false, isDarkMode: true, currentProvider: 'CartoDB Voyager' });
-      drawRouteOnMap({ ...baseOptions, points, isSatellite: false, isDarkMode: true, currentProvider: 'OpenStreetMap' });
-      drawRouteOnMap({ ...baseOptions, points, isSatellite: false, isDarkMode: false, currentProvider: 'OpenStreetMap' });
+      drawRouteOnMap({ ...baseOptions, isSatellite: true, points });
+      drawRouteOnMap({
+        ...baseOptions,
+        currentProvider: 'CartoDB Voyager',
+        isDarkMode: true,
+        isSatellite: false,
+        points,
+      });
+      drawRouteOnMap({
+        ...baseOptions,
+        currentProvider: 'OpenStreetMap',
+        isDarkMode: true,
+        isSatellite: false,
+        points,
+      });
+      drawRouteOnMap({
+        ...baseOptions,
+        currentProvider: 'OpenStreetMap',
+        isDarkMode: false,
+        isSatellite: false,
+        points,
+      });
 
       expect((window as any).L.polylineDecorator).toHaveBeenCalled();
     });
@@ -108,23 +129,25 @@ describe('RouteDrawer', () => {
       const points: RoutePoint[] = [
         { loc: L.latLng(0, 0), timestamp: 'time1' },
         { loc: L.latLng(1, 1), timestamp: 'time2' },
-        { loc: L.latLng(2, 2), timestamp: 'time3' }
+        { loc: L.latLng(2, 2), timestamp: 'time3' },
       ];
 
-      drawRouteOnMap({ ...baseOptions, points });
+      expect(() => {
+        drawRouteOnMap({ ...baseOptions, points });
 
-      const layers = routeLayer.getLayers();
-      layers.forEach((layer: any) => {
-        if (layer.fire) {
-          layer.fire('click');
-        }
-      });
+        const layers = routeLayer.getLayers();
+        layers.forEach((layer: any) => {
+          if (layer.fire) {
+            layer.fire('click');
+          }
+        });
+      }).not.toThrow();
     });
 
     it('handles missing polylineDecorator', () => {
       const points: RoutePoint[] = [
         { loc: L.latLng(0, 0), timestamp: 'time1' },
-        { loc: L.latLng(1, 1), timestamp: 'time2' }
+        { loc: L.latLng(1, 1), timestamp: 'time2' },
       ];
       delete (window as any).L.polylineDecorator;
 

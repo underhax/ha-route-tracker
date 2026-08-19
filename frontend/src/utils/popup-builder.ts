@@ -1,15 +1,37 @@
-import { RoutePoint } from './route-drawer';
-import { copySvg } from '../icons/copy';
-import { checkSvg } from '../icons/check';
-import { searchSvg } from '../icons/search';
-import { routeSvg } from '../icons/route';
-import { sourceSvg } from '../icons/source';
-import { accuracySvg } from '../icons/accuracy';
-import { altitudeSvg } from '../icons/altitude';
-import { speedSvg } from '../icons/speed';
-import { batterySvg } from '../icons/battery';
-import { fetchAddress } from './geocoder';
-import { ROUTING_PROVIDERS, DEFAULT_ROUTING_PROVIDER } from './routing-providers';
+import { accuracySvg } from '../icons/accuracy.ts';
+import { altitudeSvg } from '../icons/altitude.ts';
+import { batterySvg } from '../icons/battery.ts';
+import { checkSvg } from '../icons/check.ts';
+import { copySvg } from '../icons/copy.ts';
+import { routeSvg } from '../icons/route.ts';
+import { searchSvg } from '../icons/search.ts';
+import { sourceSvg } from '../icons/source.ts';
+import { speedSvg } from '../icons/speed.ts';
+import { fetchAddress } from './geocoder.ts';
+import type { RoutePoint } from './route-drawer.ts';
+import { DEFAULT_ROUTING_PROVIDER, resolveRoutingProvider } from './routing-providers.ts';
+
+interface HassUnitSystem {
+  length?: string;
+}
+
+interface HassConfig {
+  unit_system?: HassUnitSystem;
+}
+
+interface ZoneAttributes {
+  latitude?: string;
+  longitude?: string;
+}
+
+interface ZoneState {
+  attributes?: ZoneAttributes;
+}
+
+interface HassForPopup {
+  config?: HassConfig;
+  states?: Record<string, ZoneState>;
+}
 
 export function buildPopupContent(
   point: RoutePoint,
@@ -19,7 +41,7 @@ export function buildPopupContent(
   enableGeocoding: boolean = false,
   enableRouting: boolean = false,
   routeOrigin: string = 'device',
-  hass?: any
+  hass?: HassForPopup,
 ): HTMLElement {
   const container = document.createElement('div');
   container.className = 'rt-popup-container';
@@ -76,20 +98,50 @@ export function buildPopupContent(
   };
 
   if (point.source_type) {
-    extraParts.push(createAttrNode(sourceSvg, point.source_type, `${localize('card.source_type', language) || 'Source'}: ${point.source_type}`));
+    extraParts.push(
+      createAttrNode(
+        sourceSvg,
+        point.source_type,
+        `${localize('card.source_type', language) || 'Source'}: ${point.source_type}`,
+      ),
+    );
   }
   if (point.gps_accuracy !== undefined && point.gps_accuracy !== 0) {
     const unitM = localize('card.unit_m', language) || 'm';
-    extraParts.push(createAttrNode(accuracySvg, `${point.gps_accuracy} ${unitM}`, `${localize('card.gps_accuracy', language) || 'Accuracy'}: ${point.gps_accuracy} ${unitM}`));
+    extraParts.push(
+      createAttrNode(
+        accuracySvg,
+        `${point.gps_accuracy} ${unitM}`,
+        `${localize('card.gps_accuracy', language) || 'Accuracy'}: ${point.gps_accuracy} ${unitM}`,
+      ),
+    );
   }
   if (point.altitude !== undefined) {
-    extraParts.push(createAttrNode(altitudeSvg, `${point.altitude} ${altUnit}`, `${localize('card.altitude', language) || 'Altitude'}: ${point.altitude} ${altUnit}`));
+    extraParts.push(
+      createAttrNode(
+        altitudeSvg,
+        `${point.altitude} ${altUnit}`,
+        `${localize('card.altitude', language) || 'Altitude'}: ${point.altitude} ${altUnit}`,
+      ),
+    );
   }
   if (point.speed !== undefined && point.speed !== 0) {
-    extraParts.push(createAttrNode(speedSvg, `${point.speed} ${speedUnit}`, `${localize('card.speed', language) || 'Speed'}: ${point.speed} ${speedUnit}`));
+    extraParts.push(
+      createAttrNode(
+        speedSvg,
+        `${point.speed} ${speedUnit}`,
+        `${localize('card.speed', language) || 'Speed'}: ${point.speed} ${speedUnit}`,
+      ),
+    );
   }
   if (point.battery_level !== undefined) {
-    extraParts.push(createAttrNode(batterySvg, `${point.battery_level}%`, `${localize('card.battery_level', language) || 'Battery'}: ${point.battery_level}%`));
+    extraParts.push(
+      createAttrNode(
+        batterySvg,
+        `${point.battery_level}%`,
+        `${localize('card.battery_level', language) || 'Battery'}: ${point.battery_level}%`,
+      ),
+    );
   }
 
   if (extraParts.length > 0) {
@@ -100,7 +152,9 @@ export function buildPopupContent(
       extraContainer.style.gridTemplateColumns = 'repeat(4, max-content)';
     }
 
-    extraParts.forEach(part => extraContainer.appendChild(part));
+    for (const part of extraParts) {
+      extraContainer.appendChild(part);
+    }
     container.appendChild(extraContainer);
   }
 
@@ -147,20 +201,24 @@ export function buildPopupContent(
     let originLat: number | undefined;
     let originLng: number | undefined;
 
-    if (routeOrigin && routeOrigin.startsWith('zone.') && hass && hass.states[routeOrigin]) {
+    if (routeOrigin.startsWith('zone.') && hass?.states?.[routeOrigin]) {
       const stateObj = hass.states[routeOrigin];
-      if (stateObj.attributes && 'latitude' in stateObj.attributes && 'longitude' in stateObj.attributes) {
+      if (
+        stateObj.attributes &&
+        'latitude' in stateObj.attributes &&
+        'longitude' in stateObj.attributes
+      ) {
         originLat = parseFloat(stateObj.attributes.latitude);
         originLng = parseFloat(stateObj.attributes.longitude);
-        if (isNaN(originLat) || isNaN(originLng)) {
+        if (Number.isNaN(originLat) || Number.isNaN(originLng)) {
           originLat = undefined;
           originLng = undefined;
         }
       }
     }
 
-    const provider = ROUTING_PROVIDERS[routingProvider] || ROUTING_PROVIDERS[DEFAULT_ROUTING_PROVIDER];
-    routeBtn.href = provider!.buildUrl(point.loc.lat, point.loc.lng, originLat, originLng);
+    const provider = resolveRoutingProvider(routingProvider);
+    routeBtn.href = provider.buildUrl(point.loc.lat, point.loc.lng, originLat, originLng);
 
     const routeLabelText = localize('card.build_route', language) || 'Build Route';
     routeBtn.innerHTML = `${routeSvg}<span>${routeLabelText}</span>`;

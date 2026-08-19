@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import * as cardLayout from './card-layout';
-import * as leafletOverrides from './leaflet-overrides';
-import * as mapFilters from './map-filters';
-import * as uiControls from './ui-controls';
+import * as cardLayout from './card-layout.ts';
+import * as leafletOverrides from './leaflet-overrides.ts';
+import * as mapFilters from './map-filters.ts';
+import * as uiControls from './ui-controls.ts';
 
 describe('CSSModules', () => {
   it('exports defined CSSResult objects for all styles', () => {

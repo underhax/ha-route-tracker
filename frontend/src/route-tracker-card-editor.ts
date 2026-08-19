@@ -1,13 +1,10 @@
-import { LitElement, html } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
 import type { HomeAssistant, LovelaceCardEditor } from 'custom-card-helpers';
-import { localize } from './localize';
-import {
-  getRouteEntityEligibility,
-  isEligibleRouteEntity,
-} from './tracker-eligibility';
-import { ROUTING_PROVIDERS, DEFAULT_ROUTING_PROVIDER } from './utils/routing-providers';
-import { editorStyles } from './css/editor';
+import { html, LitElement } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
+import { editorStyles } from './css/editor.ts';
+import { localize } from './localize.ts';
+import { getRouteEntityEligibility, isEligibleRouteEntity } from './tracker-eligibility.ts';
+import { DEFAULT_ROUTING_PROVIDER, ROUTING_PROVIDERS } from './utils/routing-providers.ts';
 
 @customElement('route-tracker-card-editor')
 export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEditor {
@@ -23,11 +20,13 @@ export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEd
   static override styles = editorStyles;
 
   private _fireConfigChanged() {
-    this.dispatchEvent(new CustomEvent('config-changed', {
-      detail: { config: this._config },
-      bubbles: true,
-      composed: true,
-    }));
+    this.dispatchEvent(
+      new CustomEvent('config-changed', {
+        bubbles: true,
+        composed: true,
+        detail: { config: this._config },
+      }),
+    );
   }
 
   private _addItem(section: 'entities' | 'zones') {
@@ -44,7 +43,12 @@ export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEd
     this._fireConfigChanged();
   }
 
-  private _updateItem(section: 'entities' | 'zones', index: number, field: 'entity' | 'name', value: string) {
+  private _updateItem(
+    section: 'entities' | 'zones',
+    index: number,
+    field: 'entity' | 'name',
+    value: string,
+  ) {
     const items = [...(this._config[section] || [])];
     items[index] = { ...items[index], [field]: value };
     this._config = { ...this._config, [section]: items };
@@ -64,7 +68,9 @@ export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEd
     this._dragIndex = null;
     this._dragSection = null;
     (e.target as HTMLElement).classList.remove('dragging');
-    this.shadowRoot?.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    this.shadowRoot
+      ?.querySelectorAll('.drag-over')
+      .forEach((el) => el.classList.remove('drag-over'));
   }
 
   private _onDragOver(e: DragEvent) {
@@ -73,7 +79,9 @@ export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEd
       e.dataTransfer.dropEffect = 'move';
     }
     const row = (e.target as HTMLElement).closest('.entity-row');
-    this.shadowRoot?.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    this.shadowRoot
+      ?.querySelectorAll('.drag-over')
+      .forEach((el) => el.classList.remove('drag-over'));
     if (row) {
       row.classList.add('drag-over');
     }
@@ -88,9 +96,15 @@ export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEd
 
   private _onDrop(targetIndex: number, section: 'entities' | 'zones', e: DragEvent) {
     e.preventDefault();
-    this.shadowRoot?.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    this.shadowRoot
+      ?.querySelectorAll('.drag-over')
+      .forEach((el) => el.classList.remove('drag-over'));
 
-    if (this._dragIndex === null || this._dragSection !== section || this._dragIndex === targetIndex) {
+    if (
+      this._dragIndex === null ||
+      this._dragSection !== section ||
+      this._dragIndex === targetIndex
+    ) {
       return;
     }
 
@@ -128,7 +142,7 @@ export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEd
     title: string,
     addLabel: string,
     domains: string[],
-    entityFilter?: (stateObj: any) => boolean
+    entityFilter?: (stateObj: any) => boolean,
   ) {
     const items = this._config[section] || [];
 
@@ -137,7 +151,8 @@ export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEd
         <div class="section-header">
           <h4>${title}</h4>
         </div>
-        ${items.map((ent: any, index: number) => html`
+        ${items.map(
+          (ent: any, index: number) => html`
           <div class="entity-row"
                draggable="true"
                @dragstart=${(e: DragEvent) => this._onDragStart(index, section, e)}
@@ -160,10 +175,13 @@ export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEd
                    placeholder="${localize('editor.placeholder_name', this.hass.language)}" />
             <button class="btn-remove" @click=${() => this._removeItem(section, index)} title="Remove">🗑</button>
           </div>
-          ${section === 'entities' && this._routeEntityError(ent.entity || '')
-            ? html`<p class="entity-error">${this._routeEntityError(ent.entity)}</p>`
-            : ''}
-        `)}
+          ${
+            section === 'entities' && this._routeEntityError(ent.entity || '')
+              ? html`<p class="entity-error">${this._routeEntityError(ent.entity)}</p>`
+              : ''
+          }
+        `,
+        )}
         <button class="btn-add" @click=${() => this._addItem(section)}>${addLabel}</button>
       </div>
     `;
@@ -186,7 +204,10 @@ export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEd
           <select
             .value=${this._config.map_provider || 'osm_default'}
             @change=${(e: Event) => {
-              this._config = { ...this._config, map_provider: (e.target as HTMLSelectElement).value };
+              this._config = {
+                ...this._config,
+                map_provider: (e.target as HTMLSelectElement).value,
+              };
               this._fireConfigChanged();
             }}
             class="form-select"
@@ -221,7 +242,7 @@ export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEd
           localize('editor.trackers', lang),
           localize('editor.add_tracker', lang),
           ['device_tracker', 'person'],
-          trackerFilter
+          trackerFilter,
         )}
 
         <hr />
@@ -230,7 +251,7 @@ export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEd
           'zones',
           localize('editor.zones', lang),
           localize('editor.add_zone', lang),
-          ['zone']
+          ['zone'],
         )}
 
         <hr />
@@ -248,17 +269,24 @@ export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEd
             <input type="checkbox"
               .checked=${this._config.enable_geocoding === true}
               @change=${(e: Event) => {
-                this._config = { ...this._config, enable_geocoding: (e.target as HTMLInputElement).checked };
+                this._config = {
+                  ...this._config,
+                  enable_geocoding: (e.target as HTMLInputElement).checked,
+                };
                 this._fireConfigChanged();
               }}
             />
             <span>${localize('editor.enable_geocoding', lang)}</span>
           </label>
-          ${this._config.enable_geocoding === true ? html`
+          ${
+            this._config.enable_geocoding === true
+              ? html`
             <p class="checkbox-description">
               ${localize('editor.info_geocoding', lang)} <a href="https://nominatim.openstreetmap.org" target="_blank" rel="noopener noreferrer">https://nominatim.openstreetmap.org</a>
             </p>
-          ` : ''}
+          `
+              : ''
+          }
         </div>
 
         <div>
@@ -266,19 +294,27 @@ export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEd
             <input type="checkbox"
               .checked=${this._config.enable_routing === true}
               @change=${(e: Event) => {
-                this._config = { ...this._config, enable_routing: (e.target as HTMLInputElement).checked };
+                this._config = {
+                  ...this._config,
+                  enable_routing: (e.target as HTMLInputElement).checked,
+                };
                 this._fireConfigChanged();
               }}
             />
             <span>${localize('editor.enable_routing', lang)}</span>
           </label>
 
-          ${this._config.enable_routing === true ? html`
+          ${
+            this._config.enable_routing === true
+              ? html`
             <div class="routing-settings-container">
               <select
                 .value=${this._config.route_origin || 'device'}
                 @change=${(e: Event) => {
-                  this._config = { ...this._config, route_origin: (e.target as HTMLSelectElement).value };
+                  this._config = {
+                    ...this._config,
+                    route_origin: (e.target as HTMLSelectElement).value,
+                  };
                   this._fireConfigChanged();
                 }}
                 class="form-select margin-bottom"
@@ -287,8 +323,8 @@ export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEd
                   ${localize('editor.origin_device', lang)}
                 </option>
                 ${Object.keys(this.hass.states)
-                  .filter(entityId => entityId.startsWith('zone.'))
-                  .map(entityId => {
+                  .filter((entityId) => entityId.startsWith('zone.'))
+                  .map((entityId) => {
                     const stateObj = this.hass.states[entityId];
                     const name = stateObj?.attributes?.friendly_name || entityId;
                     return html`
@@ -299,25 +335,34 @@ export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEd
                   })}
               </select>
 
-              ${(this._config.route_origin || 'device') === 'device' ? html`
+              ${
+                (this._config.route_origin || 'device') === 'device'
+                  ? html`
                 <p class="origin-device-info">
                   ${localize('editor.info_origin_device', lang)}
                 </p>
-              ` : ''}
+              `
+                  : ''
+              }
 
               <select
                 .value=${this._config.routing_provider || DEFAULT_ROUTING_PROVIDER}
                 @change=${(e: Event) => {
-                  this._config = { ...this._config, routing_provider: (e.target as HTMLSelectElement).value };
+                  this._config = {
+                    ...this._config,
+                    routing_provider: (e.target as HTMLSelectElement).value,
+                  };
                   this._fireConfigChanged();
                 }}
                 class="form-select margin-bottom"
               >
-                ${Object.values(ROUTING_PROVIDERS).map(provider => html`
+                ${Object.values(ROUTING_PROVIDERS).map(
+                  (provider) => html`
                   <option value="${provider.id}" ?selected=${(this._config.routing_provider || DEFAULT_ROUTING_PROVIDER) === provider.id}>
                     ${localize(provider.nameKey, lang)}
                   </option>
-                `)}
+                `,
+                )}
               </select>
 
               <p class="routing-provider-info">
@@ -327,7 +372,9 @@ export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEd
                 </a>
               </p>
             </div>
-          ` : ''}
+          `
+              : ''
+          }
         </div>
       </div>
     `;

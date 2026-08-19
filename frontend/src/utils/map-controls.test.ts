@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createResetControl, createThemeControl } from './map-controls';
+import { createResetControl, createThemeControl } from './map-controls.ts';
 
 describe('MapControls', () => {
   const localize = vi.fn((key: string) => `translated_${key}`);
@@ -35,7 +35,13 @@ describe('MapControls', () => {
       const getIsDarkMode = vi.fn(() => isDark);
       const onToggleTheme = vi.fn();
 
-      const control = createThemeControl(localize, 'en', getIsSatellite, getIsDarkMode, onToggleTheme);
+      const control = createThemeControl(
+        localize,
+        'en',
+        getIsSatellite,
+        getIsDarkMode,
+        onToggleTheme,
+      );
       const container = (control as any).onAdd();
       expect(container).toBeDefined();
 
@@ -67,7 +73,13 @@ describe('MapControls', () => {
       const getIsDarkMode = vi.fn(() => false);
       const onToggleTheme = vi.fn();
 
-      const control = createThemeControl(localize, 'en', getIsSatellite, getIsDarkMode, onToggleTheme);
+      const control = createThemeControl(
+        localize,
+        'en',
+        getIsSatellite,
+        getIsDarkMode,
+        onToggleTheme,
+      );
       const container = (control as any).onAdd();
       const link = container.querySelector('a');
 
@@ -84,7 +96,13 @@ describe('MapControls', () => {
       const getIsDarkMode = vi.fn(() => false);
       const onToggleTheme = vi.fn();
 
-      const control = createThemeControl(localize, 'en', getIsSatellite, getIsDarkMode, onToggleTheme);
+      const control = createThemeControl(
+        localize,
+        'en',
+        getIsSatellite,
+        getIsDarkMode,
+        onToggleTheme,
+      );
       const container = (control as any).onAdd();
       const link = container.querySelector('a');
 

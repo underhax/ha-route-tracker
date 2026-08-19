@@ -1,5 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { fetchAddress } from './geocoder';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { fetchAddress } from './geocoder.ts';
 
 describe('fetchAddress()', () => {
   beforeEach(() => {
@@ -23,8 +23,8 @@ describe('fetchAddress()', () => {
 
   it('extracts display_name when structured address data is unavailable', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
-      ok: true,
       json: async () => ({ display_name: 'Fallback Address' }),
+      ok: true,
     } as Response);
 
     const result = await fetchAddress(0, 0, 'en');
@@ -33,15 +33,15 @@ describe('fetchAddress()', () => {
 
   it('constructs standardized address string from comprehensive data', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
-      ok: true,
       json: async () => ({
         address: {
-          road: 'Test Street',
-          house_number: '123',
-          city_district: 'Downtown',
           city: 'Testville',
+          city_district: 'Downtown',
+          house_number: '123',
+          road: 'Test Street',
         },
       }),
+      ok: true,
     } as Response);
 
     const result = await fetchAddress(0, 0, 'en');
@@ -50,14 +50,14 @@ describe('fetchAddress()', () => {
 
   it('prepends points of interest (POI) to the formatted address', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
-      ok: true,
       json: async () => ({
         address: {
+          city: 'History Town',
           historic: 'Ancient Monument',
           road: 'Old Road',
-          city: 'History Town',
         },
       }),
+      ok: true,
     } as Response);
 
     const result = await fetchAddress(0, 0, 'en');
@@ -66,13 +66,13 @@ describe('fetchAddress()', () => {
 
   it('formats rural addresses lacking street information', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
-      ok: true,
       json: async () => ({
         address: {
-          village: 'Small Village',
           county: 'Big County',
+          village: 'Small Village',
         },
       }),
+      ok: true,
     } as Response);
 
     const result = await fetchAddress(0, 0, 'en');
@@ -81,7 +81,6 @@ describe('fetchAddress()', () => {
 
   it('incorporates house names when numeric identifiers are missing', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
-      ok: true,
       json: async () => ({
         address: {
           house_name: 'The Cottage',
@@ -89,6 +88,7 @@ describe('fetchAddress()', () => {
           village: 'Hamlet',
         },
       }),
+      ok: true,
     } as Response);
 
     const result = await fetchAddress(0, 0, 'en');
@@ -97,13 +97,13 @@ describe('fetchAddress()', () => {
 
   it('retains house numbers even when street context is absent', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
-      ok: true,
       json: async () => ({
         address: {
-          house_number: '42',
           city: 'OnlyHouseCity',
+          house_number: '42',
         },
       }),
+      ok: true,
     } as Response);
 
     const result = await fetchAddress(0, 0, 'en');
@@ -112,13 +112,13 @@ describe('fetchAddress()', () => {
 
   it('utilizes district information as fallback for missing city data', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
-      ok: true,
       json: async () => ({
         address: {
-          road: 'Main St',
           district: 'Some District',
+          road: 'Main St',
         },
       }),
+      ok: true,
     } as Response);
 
     const result = await fetchAddress(0, 0, 'en');
@@ -127,11 +127,11 @@ describe('fetchAddress()', () => {
 
   it('reverts to display_name when address components are unrecognized', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
-      ok: true,
       json: async () => ({
         address: { unknown_tag: '123' },
-        display_name: 'Fallback Name'
+        display_name: 'Fallback Name',
       }),
+      ok: true,
     } as Response);
 
     const result = await fetchAddress(0, 0, 'en');
@@ -140,10 +140,10 @@ describe('fetchAddress()', () => {
 
   it('returns null for unrecognized address components without display_name', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
-      ok: true,
       json: async () => ({
         address: { unknown_tag: '123' },
       }),
+      ok: true,
     } as Response);
 
     const result = await fetchAddress(0, 0, 'en');
@@ -152,13 +152,39 @@ describe('fetchAddress()', () => {
 
   it('returns null for completely malformed API responses', async () => {
     vi.mocked(globalThis.fetch).mockResolvedValueOnce({
-      ok: true,
       json: async () => ({
-        error: 'No address found'
+        error: 'No address found',
       }),
+      ok: true,
     } as Response);
 
     const result = await fetchAddress(10, 20, 'en');
     expect(result).toBeNull();
+  });
+
+  it.each([
+    {
+      address: { amenity: 'Central Cafe', city: 'Cafeville', road: 'Central Cafe' },
+      description: 'street matches POI',
+      expected: 'Central Cafe, Cafeville',
+    },
+    {
+      address: { borough: 'Springfield', city: 'Springfield', road: 'Main St' },
+      description: 'borough matches city',
+      expected: 'Main St',
+    },
+    {
+      address: { city: 'Townsville', road: 'Townsville' },
+      description: 'city matches street',
+      expected: 'Townsville',
+    },
+  ])('omits duplicate parts when $description', async ({ address, expected }) => {
+    vi.mocked(globalThis.fetch).mockResolvedValueOnce({
+      json: async () => ({ address }),
+      ok: true,
+    } as Response);
+
+    const result = await fetchAddress(0, 0, 'en');
+    expect(result).toBe(expected);
   });
 });

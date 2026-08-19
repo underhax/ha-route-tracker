@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import * as de from './de';
-import * as en from './en';
-import * as es from './es';
-import * as fr from './fr';
-import * as ru from './ru';
-import * as uk from './uk';
+import * as de from './de.ts';
+import * as en from './en.ts';
+import * as es from './es.ts';
+import * as fr from './fr.ts';
+import * as ru from './ru.ts';
+import * as uk from './uk.ts';
 
 describe('Locales', () => {
   it('exports defined dictionary objects for all supported languages', () => {

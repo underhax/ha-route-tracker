@@ -1,30 +1,27 @@
-import { LitElement, html, PropertyValues, unsafeCSS } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
 import type { HomeAssistant } from 'custom-card-helpers';
 import * as L from 'leaflet';
+import { html, LitElement, type PropertyValues, unsafeCSS } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
 import 'leaflet-polylinedecorator';
 import leafletCss from 'leaflet/dist/leaflet.css?inline';
-import './route-tracker-card-editor';
-import { localize } from './localize';
-import { cardLayoutStyles } from './css/card-layout';
-import { mapFiltersStyles } from './css/map-filters';
-import { uiControlsStyles } from './css/ui-controls';
-import { leafletOverridesStyles } from './css/leaflet-overrides';
-import { popupStyles } from './css/popup';
-import { popupRoutingStyles } from './css/popup-routing';
-
+import './route-tracker-card-editor.ts';
+import { cardLayoutStyles } from './css/card-layout.ts';
+import { leafletOverridesStyles } from './css/leaflet-overrides.ts';
+import { mapFiltersStyles } from './css/map-filters.ts';
+import { popupStyles } from './css/popup.ts';
+import { popupRoutingStyles } from './css/popup-routing.ts';
+import { uiControlsStyles } from './css/ui-controls.ts';
+import { hamburgerSvg } from './icons/hamburger.ts';
+import { localize } from './localize.ts';
 import {
   getEligibleRouteEntities,
   getSelectedTrackersForPerson,
   isEligibleRouteEntity,
   toVirtualSensorId,
-} from './tracker-eligibility';
-
-import { hamburgerSvg } from './icons/hamburger';
-
-import { getBaseMaps } from './utils/map-providers';
-import { createResetControl, createThemeControl } from './utils/map-controls';
-import { RoutePoint, calculateDistance, drawRouteOnMap } from './utils/route-drawer';
+} from './tracker-eligibility.ts';
+import { createResetControl, createThemeControl } from './utils/map-controls.ts';
+import { getBaseMaps } from './utils/map-providers.ts';
+import { calculateDistance, drawRouteOnMap, type RoutePoint } from './utils/route-drawer.ts';
 
 interface ConfiguredRouteEntity {
   entity: string;
@@ -37,23 +34,25 @@ function isConfiguredRouteEntity(value: unknown): value is ConfiguredRouteEntity
   }
 
   const entity = value as Record<string, unknown>;
-  return typeof entity['entity'] === 'string' &&
-    (entity['name'] === undefined || typeof entity['name'] === 'string');
+  return (
+    typeof entity['entity'] === 'string' &&
+    (entity['name'] === undefined || typeof entity['name'] === 'string')
+  );
 }
 
 function getLocalDateString(date: Date, hass?: HomeAssistant): string {
   if (hass?.config?.time_zone) {
     try {
       const parts = new Intl.DateTimeFormat('en-US', {
+        day: '2-digit',
+        month: '2-digit',
         timeZone: hass.config.time_zone,
         year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
       }).formatToParts(date);
 
-      const year = parts.find(p => p.type === 'year')?.value;
-      const month = parts.find(p => p.type === 'month')?.value;
-      const day = parts.find(p => p.type === 'day')?.value;
+      const year = parts.find((p) => p.type === 'year')?.value;
+      const month = parts.find((p) => p.type === 'month')?.value;
+      const day = parts.find((p) => p.type === 'day')?.value;
 
       if (year && month && day) {
         return `${year}-${month}-${day}`;
@@ -110,7 +109,7 @@ export class RouteTrackerCard extends LitElement {
     uiControlsStyles,
     leafletOverridesStyles,
     popupStyles,
-    popupRoutingStyles
+    popupRoutingStyles,
   ];
 
   public setConfig(config: any): void {
@@ -180,9 +179,8 @@ export class RouteTrackerCard extends LitElement {
     while (currentElement) {
       ancestors.push(currentElement);
       const root = currentElement.getRootNode();
-      currentElement = currentElement.parentElement ?? (
-        root instanceof ShadowRoot ? root.host : null
-      );
+      currentElement =
+        currentElement.parentElement ?? (root instanceof ShadowRoot ? root.host : null);
     }
 
     return ancestors;
@@ -190,12 +188,11 @@ export class RouteTrackerCard extends LitElement {
 
   private updatePanelEditModeClass(): void {
     const ancestors = this.getComposedAncestors();
-    const isEditMode = ancestors.some(element =>
-      element.classList.contains('edit-mode')
-    );
-    const isPanel = ancestors.some(element =>
-      (element.matches && element.matches('hui-card-options.panel')) ||
-      element.tagName === 'HUI-PANEL-VIEW'
+    const isEditMode = ancestors.some((element) => element.classList.contains('edit-mode'));
+    const isPanel = ancestors.some(
+      (element) =>
+        (element.matches && element.matches('hui-card-options.panel')) ||
+        element.tagName === 'HUI-PANEL-VIEW',
     );
 
     this.classList.toggle('is-editing-panel', isEditMode && isPanel);
@@ -209,8 +206,8 @@ export class RouteTrackerCard extends LitElement {
 
     for (const ancestor of this.getComposedAncestors()) {
       this.editModeObserver.observe(ancestor, {
-        attributes: true,
         attributeFilter: ['class'],
+        attributes: true,
       });
     }
   }
@@ -245,21 +242,22 @@ export class RouteTrackerCard extends LitElement {
 
   private loadDevices(): void {
     const configuredEntities: unknown = this.config.entities;
-    const routeEntities = Array.isArray(configuredEntities) && configuredEntities.length > 0
-      ? configuredEntities
-        .filter(isConfiguredRouteEntity)
-        .filter(entity => isEligibleRouteEntity(entity.entity, this.hass.states))
-        .map(entity => ({
-          entity_id: entity.entity,
-          name: this.displayName(entity.entity, entity.name)
-        }))
-      : getEligibleRouteEntities(this.hass.states).map(({ entityId }) => ({
-        entity_id: entityId,
-        name: this.displayName(entityId)
-      }));
+    const routeEntities =
+      Array.isArray(configuredEntities) && configuredEntities.length > 0
+        ? configuredEntities
+            .filter(isConfiguredRouteEntity)
+            .filter((entity) => isEligibleRouteEntity(entity.entity, this.hass.states))
+            .map((entity) => ({
+              entity_id: entity.entity,
+              name: this.displayName(entity.entity, entity.name),
+            }))
+        : getEligibleRouteEntities(this.hass.states).map(({ entityId }) => ({
+            entity_id: entityId,
+            name: this.displayName(entityId),
+          }));
 
     this.devices = routeEntities;
-    if (!this.devices.some(device => device.entity_id === this.selectedDevice)) {
+    if (!this.devices.some((device) => device.entity_id === this.selectedDevice)) {
       this.selectedDevice = this.devices[0]?.entity_id || '';
     }
   }
@@ -278,13 +276,15 @@ export class RouteTrackerCard extends LitElement {
     const currentLang = this.hass?.language || 'en';
 
     this.map = L.map(mapContainer, {
-      zoomControl: false
+      zoomControl: false,
     }).setView([lat, lon], 19);
 
-    L.control.zoom({
-      zoomInTitle: localize('card.zoom_in', currentLang),
-      zoomOutTitle: localize('card.zoom_out', currentLang)
-    }).addTo(this.map);
+    L.control
+      .zoom({
+        zoomInTitle: localize('card.zoom_in', currentLang),
+        zoomOutTitle: localize('card.zoom_out', currentLang),
+      })
+      .addTo(this.map);
 
     const attributionControl = this.map.attributionControl;
     if (attributionControl) {
@@ -314,7 +314,9 @@ export class RouteTrackerCard extends LitElement {
     if (defaultLayer) {
       defaultLayer.addTo(this.map);
     }
-    const providerControl = L.control.layers(baseMaps, undefined, { position: 'bottomleft' }).addTo(this.map);
+    const providerControl = L.control
+      .layers(baseMaps, undefined, { position: 'bottomleft' })
+      .addTo(this.map);
     const providerContainer = providerControl.getContainer();
     if (providerContainer && this.mapContainer && this.mapContainer.parentElement) {
       providerContainer.classList.add('provider-selector');
@@ -323,7 +325,7 @@ export class RouteTrackerCard extends LitElement {
 
     this.map.on('baselayerchange', (e: any) => {
       this._currentProvider = e.name;
-      this._isSatellite = (e.name === 'Esri Satellite');
+      this._isSatellite = e.name === 'Esri Satellite';
       this.updateMapThemeClass();
       if (this._lastPoints && this._lastPoints.length > 0) {
         this.drawRoute(this._lastPoints);
@@ -336,15 +338,11 @@ export class RouteTrackerCard extends LitElement {
     this._lastIsDark = this.isDarkMode;
     this.updateMapThemeClass();
 
-    const resetControl = createResetControl(
-      localize,
-      currentLang,
-      () => {
-        if (this.routeBounds) {
-          this.map?.fitBounds(this.routeBounds);
-        }
+    const resetControl = createResetControl(localize, currentLang, () => {
+      if (this.routeBounds) {
+        this.map?.fitBounds(this.routeBounds);
       }
-    );
+    });
 
     this.map.addControl(resetControl);
 
@@ -353,7 +351,7 @@ export class RouteTrackerCard extends LitElement {
       currentLang,
       () => this._isSatellite,
       () => this.isDarkMode,
-      () => this.toggleManualTheme()
+      () => this.toggleManualTheme(),
     );
 
     this.map.addControl(themeControl);
@@ -363,11 +361,10 @@ export class RouteTrackerCard extends LitElement {
     if (!this.map || !this.zoneLayer) return;
     this.zoneLayer.clearLayers();
 
-    const zoneEntities = (this.config.zones || [])
-      .map((e: any) => ({
-        entity_id: e.entity,
-        name: e.name || this.hass.states[e.entity]?.attributes?.friendly_name || e.entity
-      }));
+    const zoneEntities = (this.config.zones || []).map((e: any) => ({
+      entity_id: e.entity,
+      name: e.name || this.hass.states[e.entity]?.attributes?.friendly_name || e.entity,
+    }));
 
     zoneEntities.forEach((z: any) => {
       const state = this.hass.states[z.entity_id];
@@ -379,22 +376,23 @@ export class RouteTrackerCard extends LitElement {
       if (!lat || !lon) return;
 
       L.circle([lat, lon], {
-        radius,
         color: '#42a5f5',
+        dashArray: '5, 8',
         fillColor: '#42a5f5',
         fillOpacity: 0.15,
+        radius,
         weight: 2,
-        dashArray: '5, 8',
-      }).addTo(this.zoneLayer!)
+      })
+        .addTo(this.zoneLayer!)
         .bindPopup(`<b>${z.name}</b>`);
 
       L.marker([lat, lon], {
         icon: L.divIcon({
           className: 'zone-label',
           html: `<span style="background:rgba(66,165,245,0.85);color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;white-space:nowrap;">${z.name}</span>`,
-          iconSize: [0, 0],
           iconAnchor: [0, 0],
-        })
+          iconSize: [0, 0],
+        }),
       }).addTo(this.zoneLayer!);
     });
   }
@@ -402,7 +400,11 @@ export class RouteTrackerCard extends LitElement {
   private resolveLocation(stateObj: any): [number, number] | null {
     if (!stateObj) return null;
 
-    if (stateObj.attributes && 'latitude' in stateObj.attributes && 'longitude' in stateObj.attributes) {
+    if (
+      stateObj.attributes &&
+      'latitude' in stateObj.attributes &&
+      'longitude' in stateObj.attributes
+    ) {
       const lat = parseFloat(stateObj.attributes.latitude);
       const lon = parseFloat(stateObj.attributes.longitude);
       if (!isNaN(lat) && !isNaN(lon) && !(lat === 0 && lon === 0)) {
@@ -413,7 +415,12 @@ export class RouteTrackerCard extends LitElement {
     if (stateObj.state && stateObj.state !== 'not_home' && stateObj.state !== 'unknown') {
       const zoneId = `zone.${stateObj.state.toLowerCase()}`;
       const zoneObj = this.hass.states[zoneId];
-      if (zoneObj && zoneObj.attributes && 'latitude' in zoneObj.attributes && 'longitude' in zoneObj.attributes) {
+      if (
+        zoneObj &&
+        zoneObj.attributes &&
+        'latitude' in zoneObj.attributes &&
+        'longitude' in zoneObj.attributes
+      ) {
         const lat = parseFloat(zoneObj.attributes['latitude']);
         const lon = parseFloat(zoneObj.attributes['longitude']);
         if (!isNaN(lat) && !isNaN(lon)) {
@@ -423,8 +430,6 @@ export class RouteTrackerCard extends LitElement {
     }
     return null;
   }
-
-
 
   private async fetchAndDrawRoute() {
     if (!this.selectedDevice || !this.selectedDate) return;
@@ -442,7 +447,9 @@ export class RouteTrackerCard extends LitElement {
         sourceIds = getSelectedTrackersForPerson(selectedState, this.hass.states);
       }
 
-      const virtualIds = sourceIds.map(toVirtualSensorId).filter(id => id && this.hass.states[id] !== undefined);
+      const virtualIds = sourceIds
+        .map(toVirtualSensorId)
+        .filter((id) => id && this.hass.states[id] !== undefined);
       const queryIds = virtualIds.length > 0 ? virtualIds : sourceIds;
 
       const startStr = start.toISOString();
@@ -451,36 +458,39 @@ export class RouteTrackerCard extends LitElement {
 
       const result = await this.hass.callApi<any[][]>(
         'GET',
-        `history/period/${startStr}?end_time=${endStr}&filter_entity_id=${entityIdsStr}&significant_changes_only=0`
+        `history/period/${startStr}?end_time=${endStr}&filter_entity_id=${entityIdsStr}&significant_changes_only=0`,
       );
 
       let allHistory: any[] = [];
       if (Array.isArray(result)) {
-        result.forEach(entityHistory => {
+        result.forEach((entityHistory) => {
           if (Array.isArray(entityHistory)) {
             allHistory = allHistory.concat(entityHistory);
           }
         });
       }
 
-      allHistory.sort((a, b) => new Date(a.last_updated).getTime() - new Date(b.last_updated).getTime());
+      allHistory.sort(
+        (a, b) => new Date(a.last_updated).getTime() - new Date(b.last_updated).getTime(),
+      );
 
       const points: RoutePoint[] = [];
       let lastLoc: [number, number] | null = null;
-      const minDistance = this.config.minimal_distance !== undefined ? this.config.minimal_distance : 0.05;
+      const minDistance =
+        this.config.minimal_distance !== undefined ? this.config.minimal_distance : 0.05;
 
       allHistory.forEach((state: any) => {
         const loc = this.resolveLocation(state);
         if (loc) {
           const timeStr = new Date(state.last_updated).toLocaleString();
           const point: RoutePoint = {
-            loc: L.latLng(loc[0], loc[1]),
-            timestamp: timeStr,
-            source_type: state.attributes?.['source_type'],
-            gps_accuracy: state.attributes?.['gps_accuracy'],
             altitude: state.attributes?.['altitude'],
+            battery_level: state.attributes?.['battery_level'],
+            gps_accuracy: state.attributes?.['gps_accuracy'],
+            loc: L.latLng(loc[0], loc[1]),
+            source_type: state.attributes?.['source_type'],
             speed: state.attributes?.['speed'],
-            battery_level: state.attributes?.['battery_level']
+            timestamp: timeStr,
           };
           if (!lastLoc) {
             points.push(point);
@@ -512,13 +522,13 @@ export class RouteTrackerCard extends LitElement {
       if (currentState && currentLoc) {
         const timeStr = new Date(currentState.last_updated).toLocaleString();
         const point: RoutePoint = {
-          loc: L.latLng(currentLoc[0], currentLoc[1]),
-          timestamp: timeStr,
-          source_type: currentState.attributes?.['source_type'],
-          gps_accuracy: currentState.attributes?.['gps_accuracy'],
           altitude: currentState.attributes?.['altitude'],
+          battery_level: currentState.attributes?.['battery_level'],
+          gps_accuracy: currentState.attributes?.['gps_accuracy'],
+          loc: L.latLng(currentLoc[0], currentLoc[1]),
+          source_type: currentState.attributes?.['source_type'],
           speed: currentState.attributes?.['speed'],
-          battery_level: currentState.attributes?.['battery_level']
+          timestamp: timeStr,
         };
         if (!lastLoc) {
           points.push(point);
@@ -531,8 +541,7 @@ export class RouteTrackerCard extends LitElement {
       }
 
       this.drawRoute(points);
-    } catch {
-    }
+    } catch {}
   }
 
   private drawRoute(points: RoutePoint[]) {
@@ -540,21 +549,21 @@ export class RouteTrackerCard extends LitElement {
     if (!this.map || !this.routeLayer) return;
 
     const bounds = drawRouteOnMap({
-      points,
-      map: this.map,
-      routeLayer: this.routeLayer,
-      isSatellite: this._isSatellite,
-      isDarkMode: this.isDarkMode,
       currentProvider: this._currentProvider,
-      localize,
-      language: this.hass.language,
-      fallbackLat: this.hass.config.latitude || 0.0,
-      fallbackLon: this.hass.config.longitude || 0.0,
-      routingProvider: this.config?.routing_provider || 'osm',
       enableGeocoding: this.config?.enable_geocoding || false,
       enableRouting: this.config?.enable_routing || false,
+      fallbackLat: this.hass.config.latitude || 0.0,
+      fallbackLon: this.hass.config.longitude || 0.0,
+      hass: this.hass,
+      isDarkMode: this.isDarkMode,
+      isSatellite: this._isSatellite,
+      language: this.hass.language,
+      localize,
+      map: this.map,
+      points,
+      routeLayer: this.routeLayer,
       routeOrigin: this.config?.route_origin || 'device',
-      hass: this.hass
+      routingProvider: this.config?.routing_provider || 'osm',
     });
 
     if (bounds) {
@@ -589,7 +598,10 @@ export class RouteTrackerCard extends LitElement {
   private updateMapThemeClass(): void {
     if (!this.mapContainer) return;
 
-    this.mapContainer.classList.toggle('carto-provider', this._currentProvider === 'CartoDB Voyager');
+    this.mapContainer.classList.toggle(
+      'carto-provider',
+      this._currentProvider === 'CartoDB Voyager',
+    );
 
     if (this._currentProvider === 'Esri Satellite') {
       this.mapContainer.classList.remove('dark-mode');
@@ -618,16 +630,15 @@ export class RouteTrackerCard extends LitElement {
 
   protected override render() {
     const lang = this.hass?.language || 'en';
-    const controlPanelClass = this.controlsOpen
-      ? 'control-panel is-open'
-      : 'control-panel';
+    const controlPanelClass = this.controlsOpen ? 'control-panel is-open' : 'control-panel';
 
     return html`
       <div class="card-content">
         <div id="map"></div>
-        ${this.controlsOpen
-          ? ''
-          : html`
+        ${
+          this.controlsOpen
+            ? ''
+            : html`
               <button
                 class="controls-toggle"
                 type="button"
@@ -637,7 +648,8 @@ export class RouteTrackerCard extends LitElement {
               >
                 ${hamburgerSvg}
               </button>
-            `}
+            `
+        }
         <div class=${controlPanelClass}>
           <div class="control-panel-header">
             <h3>${localize('card.map_control', lang)}</h3>
@@ -654,7 +666,7 @@ export class RouteTrackerCard extends LitElement {
           <div class="input-group">
             <label>${localize('card.device', lang)}</label>
             <select @change=${this.handleDeviceChange} .value=${this.selectedDevice}>
-              ${this.devices.map(d => html`<option value=${d.entity_id}>${d.name}</option>`)}
+              ${this.devices.map((d) => html`<option value=${d.entity_id}>${d.name}</option>`)}
             </select>
           </div>
 
@@ -675,7 +687,7 @@ export class RouteTrackerCard extends LitElement {
 
 (window as any).customCards = (window as any).customCards || [];
 (window as any).customCards.push({
-  type: 'route-tracker-card',
-  name: 'Route Tracker',
   description: 'Track device routes on a map',
+  name: 'Route Tracker',
+  type: 'route-tracker-card',
 });
