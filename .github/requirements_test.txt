@@ -1,4 +1,4 @@
-homeassistant==2026.8.0
+homeassistant==2026.8.1
 pytest-homeassistant-custom-component==0.13.354
 ruff==0.16.1
 mypy==2.3.0
