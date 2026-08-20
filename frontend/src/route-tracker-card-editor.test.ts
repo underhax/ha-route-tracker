@@ -8,9 +8,13 @@ interface RouteEntityConfig {
 }
 
 interface TestConfig {
-  map_provider?: string;
-  theme_mode?: string;
+  enable_geocoding?: boolean;
+  enable_routing?: boolean;
   entities?: RouteEntityConfig[];
+  map_provider?: string;
+  route_origin?: string;
+  routing_provider?: string;
+  theme_mode?: string;
   zones?: RouteEntityConfig[];
 }
 
@@ -425,7 +429,7 @@ describe('RouteTrackerCardEditor', () => {
     (geocodingCheckbox as HTMLInputElement).checked = true;
     (geocodingCheckbox as HTMLInputElement).dispatchEvent(new Event('change'));
 
-    expect((firedConfig as any).enable_geocoding).toBe(true);
+    expect(firedConfig.enable_geocoding).toBe(true);
   });
 
   it('fires config-changed when enable_routing changes', async () => {
@@ -445,7 +449,7 @@ describe('RouteTrackerCardEditor', () => {
     (routingCheckbox as HTMLInputElement).checked = true;
     (routingCheckbox as HTMLInputElement).dispatchEvent(new Event('change'));
 
-    expect((firedConfig as any).enable_routing).toBe(true);
+    expect(firedConfig.enable_routing).toBe(true);
   });
 
   it('fires config-changed when route_origin changes', async () => {
@@ -467,7 +471,7 @@ describe('RouteTrackerCardEditor', () => {
     (originSelect as HTMLSelectElement).value = 'zone.home';
     (originSelect as HTMLSelectElement).dispatchEvent(new Event('change'));
 
-    expect((firedConfig as any).route_origin).toBe('zone.home');
+    expect(firedConfig.route_origin).toBe('zone.home');
   });
 
   it('fires config-changed when routing_provider changes', async () => {
@@ -486,7 +490,7 @@ describe('RouteTrackerCardEditor', () => {
     (providerSelect as HTMLSelectElement).value = 'google';
     (providerSelect as HTMLSelectElement).dispatchEvent(new Event('change'));
 
-    expect((firedConfig as any).routing_provider).toBe('google');
+    expect(firedConfig.routing_provider).toBe('google');
   });
 
   it('handles zones without friendly_name and invalid routing_provider gracefully', async () => {

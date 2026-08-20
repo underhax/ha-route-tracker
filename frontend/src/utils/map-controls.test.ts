@@ -1,14 +1,28 @@
+import type * as L from 'leaflet';
 import { describe, expect, it, vi } from 'vitest';
 import { createResetControl, createThemeControl } from './map-controls.ts';
 
+interface ThemeControlContainer extends HTMLElement {
+  updateThemeIcon: () => void;
+}
+
 const localize = vi.fn((key: string) => `translated_${key}`);
+const mockMap = {} as L.Map;
+
+function callOnAdd(control: L.Control): HTMLElement {
+  const { onAdd } = control;
+  if (!onAdd) {
+    throw new Error('onAdd is not defined on this control');
+  }
+  return onAdd.call(control, mockMap);
+}
 
 describe('createResetControl()', () => {
   it('creates control and triggers onReset on click', () => {
     const onReset = vi.fn();
     const control = createResetControl(localize, 'en', onReset);
 
-    const container = (control as any).options ? (control as any).onAdd() : undefined;
+    const container = callOnAdd(control as L.Control);
     expect(container).toBeDefined();
 
     const link = container.querySelector('a');
@@ -41,7 +55,7 @@ describe('createThemeControl()', () => {
       getIsDarkMode,
       onToggleTheme,
     );
-    const container = (control as any).onAdd();
+    const container = callOnAdd(control as L.Control) as unknown as ThemeControlContainer;
     expect(container).toBeDefined();
 
     const link = container.querySelector('a');
@@ -54,12 +68,12 @@ describe('createThemeControl()', () => {
     expect(onToggleTheme).toHaveBeenCalled();
 
     isSatellite = true;
-    (container as any).updateThemeIcon();
+    container.updateThemeIcon();
     expect(container.style.display).toBe('none');
 
     isSatellite = false;
     isDark = true;
-    (container as any).updateThemeIcon();
+    container.updateThemeIcon();
     expect(container.style.display).toBe('block');
 
     const moon = link?.querySelector('.theme-moon') as HTMLElement;
@@ -79,7 +93,7 @@ describe('createThemeControl()', () => {
       getIsDarkMode,
       onToggleTheme,
     );
-    const container = (control as any).onAdd();
+    const container = callOnAdd(control as L.Control);
     const link = container.querySelector('a');
 
     const event = new MouseEvent('click');
@@ -102,7 +116,7 @@ describe('createThemeControl()', () => {
       getIsDarkMode,
       onToggleTheme,
     );
-    const container = (control as any).onAdd();
+    const container = callOnAdd(control as L.Control) as unknown as ThemeControlContainer;
     const link = container.querySelector('a');
 
     if (link) {
@@ -110,7 +124,7 @@ describe('createThemeControl()', () => {
     }
 
     expect(() => {
-      (container as any).updateThemeIcon();
+      container.updateThemeIcon();
     }).not.toThrow();
   });
 });

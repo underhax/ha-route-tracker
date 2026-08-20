@@ -32,7 +32,7 @@ describe('drawRouteOnMap()', () => {
   describe('drawRouteOnMap()', () => {
     let map: L.Map;
     let routeLayer: L.LayerGroup;
-    let localize: any;
+    let localize: (key: string, lang: string) => string;
     let baseOptions: DrawRouteOptions;
 
     beforeEach(() => {
@@ -133,7 +133,7 @@ describe('drawRouteOnMap()', () => {
         drawRouteOnMap({ ...baseOptions, points });
 
         const layers = routeLayer.getLayers();
-        layers.forEach((layer: any) => {
+        layers.forEach((layer: L.Layer) => {
           if (layer.fire) {
             layer.fire('click');
           }

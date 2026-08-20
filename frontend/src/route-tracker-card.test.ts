@@ -3,6 +3,58 @@ import * as L from 'leaflet';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RouteTrackerCard } from './route-tracker-card.ts';
 import * as mapProviders from './utils/map-providers.ts';
+import type { RoutePoint } from './utils/route-drawer.ts';
+
+interface CardInternals {
+  _currentProvider: string;
+  _lastIsDark: boolean | null;
+  _lastPoints: RoutePoint[] | null | undefined;
+  _manualTheme: 'light' | 'dark' | undefined;
+  config: Record<string, unknown>;
+  controlsOpen: boolean;
+  devices: Array<{ entity_id: string; name: string }>;
+  drawRoute: (points: RoutePoint[]) => void;
+  drawZones: () => void;
+  fetchAndDrawRoute: () => Promise<void>;
+  getComposedAncestors: () => Element[];
+  hass: HomeAssistant;
+  initMap: () => void;
+  isDarkMode: boolean;
+  loadDevices: () => void;
+  map: L.Map | null | undefined;
+  mapContainer: HTMLElement | null | undefined;
+  mapResizeFrame: number | null | undefined;
+  openControls: () => void;
+  resolveLocation: (
+    stateObj:
+      | { state?: string; attributes?: Record<string, unknown>; last_updated?: string }
+      | undefined
+      | null,
+  ) => [number, number] | null;
+  resizeObserver: ResizeObserver | null | undefined;
+  routeBounds: L.LatLngBounds | null;
+  routeLayer: L.LayerGroup | null | undefined;
+  selectedDate: string;
+  selectedDevice: string;
+  startObservingMapSize: () => void;
+  startObservingPanelEditMode: () => void;
+  toggleManualTheme: () => void;
+  updateMapThemeClass: () => void;
+  zoneLayer: L.LayerGroup;
+}
+
+interface CardStaticInternals {
+  buildRoutePoint: (state: unknown, loc: [number, number]) => RoutePoint;
+}
+
+function asCard(target: RouteTrackerCard): CardInternals {
+  return target as unknown as CardInternals;
+}
+
+function assertDefined<T>(value: T | null | undefined, label?: string): T {
+  if (value == null) throw new Error(`${label ?? 'value'} is null or undefined`);
+  return value;
+}
 
 describe('RouteTrackerCard', () => {
   let card: RouteTrackerCard;
@@ -54,7 +106,7 @@ describe('RouteTrackerCard', () => {
     it('setConfig stores valid config', () => {
       const cfg = { type: 'test' };
       card.setConfig(cfg as any);
-      expect((card as any).config).toBe(cfg);
+      expect(asCard(card).config).toBe(cfg);
     });
   });
 
@@ -65,21 +117,21 @@ describe('RouteTrackerCard', () => {
     });
 
     it('toggles controls via hamburger menu', async () => {
-      expect((card as any).controlsOpen).toBe(false);
+      expect(asCard(card).controlsOpen).toBe(false);
 
       const toggleBtn = card.shadowRoot?.querySelector('.controls-toggle') as HTMLButtonElement;
       expect(toggleBtn).not.toBeNull();
 
       toggleBtn.click();
       await card.updateComplete;
-      expect((card as any).controlsOpen).toBe(true);
+      expect(asCard(card).controlsOpen).toBe(true);
 
       const closeBtn = card.shadowRoot?.querySelector('.control-panel-close') as HTMLButtonElement;
       expect(closeBtn).not.toBeNull();
 
       closeBtn.click();
       await card.updateComplete;
-      expect((card as any).controlsOpen).toBe(false);
+      expect(asCard(card).controlsOpen).toBe(false);
     });
   });
 
@@ -87,7 +139,7 @@ describe('RouteTrackerCard', () => {
     beforeEach(async () => {
       card.setConfig({ entities: [] } as any);
       await card.updateComplete;
-      (card as any).openControls();
+      asCard(card).openControls();
       await card.updateComplete;
     });
 
@@ -102,7 +154,7 @@ describe('RouteTrackerCard', () => {
 
       select.value = 'device.new';
       select.dispatchEvent(new Event('change'));
-      expect((card as any).selectedDevice).toBe('device.new');
+      expect(asCard(card).selectedDevice).toBe('device.new');
     });
 
     it('handles date change', () => {
@@ -112,7 +164,7 @@ describe('RouteTrackerCard', () => {
 
       input.value = '1970-01-01';
       input.dispatchEvent(new Event('change'));
-      expect((card as any).selectedDate).toBe('1970-01-01');
+      expect(asCard(card).selectedDate).toBe('1970-01-01');
     });
   });
 
@@ -140,13 +192,13 @@ describe('RouteTrackerCard', () => {
           undefined,
         ],
       } as any);
-      (card as any).loadDevices();
+      asCard(card).loadDevices();
       await card.updateComplete;
 
-      const devices = (card as any).devices;
+      const devices = asCard(card).devices;
       expect(devices.length).toBe(1);
-      expect(devices[0].entity_id).toBe('device_tracker.valid');
-      expect(devices[0].name).toBe('Valid');
+      expect(assertDefined(devices[0]).entity_id).toBe('device_tracker.valid');
+      expect(assertDefined(devices[0]).name).toBe('Valid');
     });
 
     it('keeps selectedDevice if it is still valid after loadDevices', async () => {
@@ -164,10 +216,10 @@ describe('RouteTrackerCard', () => {
         entity_id: 'sensor.virtual_device_tracker_other',
         state: '100',
       } as any;
-      (card as any).selectedDevice = 'device_tracker.other';
-      (card as any).loadDevices();
+      asCard(card).selectedDevice = 'device_tracker.other';
+      asCard(card).loadDevices();
 
-      expect((card as any).selectedDevice).toBe('device_tracker.other');
+      expect(asCard(card).selectedDevice).toBe('device_tracker.other');
     });
 
     it('falls back to auto-discovered eligible entities if config.entities is empty', async () => {
@@ -189,15 +241,15 @@ describe('RouteTrackerCard', () => {
       };
 
       card.setConfig({ entities: [] } as any);
-      (card as any).loadDevices();
+      asCard(card).loadDevices();
       await card.updateComplete;
 
-      const devices = (card as any).devices;
+      const devices = asCard(card).devices;
       expect(devices.length).toBe(2);
-      expect(devices[0].entity_id).toBe('device_tracker.auto1');
-      expect(devices[0].name).toBe('Auto 1');
-      expect(devices[1].entity_id).toBe('person.auto2');
-      expect(devices[1].name).toBe('person.auto2');
+      expect(assertDefined(devices[0]).entity_id).toBe('device_tracker.auto1');
+      expect(assertDefined(devices[0]).name).toBe('Auto 1');
+      expect(assertDefined(devices[1]).entity_id).toBe('person.auto2');
+      expect(assertDefined(devices[1]).name).toBe('person.auto2');
     });
 
     it('falls back to first device if selectedDevice is no longer valid', async () => {
@@ -211,12 +263,12 @@ describe('RouteTrackerCard', () => {
         state: '1',
       } as any;
       card.setConfig({ entities: [{ entity: 'device_tracker.valid' }] } as any);
-      (card as any).selectedDevice = 'device_tracker.nonexistent';
+      asCard(card).selectedDevice = 'device_tracker.nonexistent';
 
-      (card as any).loadDevices();
+      asCard(card).loadDevices();
       await card.updateComplete;
 
-      expect((card as any).selectedDevice).toBe('device_tracker.valid');
+      expect(asCard(card).selectedDevice).toBe('device_tracker.valid');
     });
   });
 
@@ -243,7 +295,7 @@ describe('RouteTrackerCard', () => {
 
     it('observes map container resize', async () => {
       card.setConfig({ entities: [] } as any);
-      (card as any).map = { invalidateSize: vi.fn() };
+      asCard(card).map = { invalidateSize: vi.fn() } as unknown as L.Map;
 
       const originalRaf = window.requestAnimationFrame;
       window.requestAnimationFrame = (cb: FrameRequestCallback): number =>
@@ -266,18 +318,19 @@ describe('RouteTrackerCard', () => {
       const mapContainer = card.shadowRoot?.getElementById('map');
       expect(mapContainer).not.toBeNull();
 
-      if ((card as any).resizeObserver) {
-        (card as any).resizeObserver.disconnect();
-        (card as any).resizeObserver = undefined;
+      const existingObserver = asCard(card).resizeObserver;
+      if (existingObserver) {
+        existingObserver.disconnect();
+        asCard(card).resizeObserver = undefined;
       }
 
-      (card as any).startObservingMapSize();
+      asCard(card).startObservingMapSize();
       if (roCallback) {
         (roCallback as () => void)();
       }
 
       await new Promise((resolve) => setTimeout(resolve, 0));
-      expect((card as any).map.invalidateSize).toHaveBeenCalled();
+      expect(assertDefined(asCard(card).map).invalidateSize).toHaveBeenCalled();
 
       window.requestAnimationFrame = originalRaf;
       window.ResizeObserver = originalRO;
@@ -287,38 +340,39 @@ describe('RouteTrackerCard', () => {
   describe('initMap()', () => {
     it('initializes map with proper providers and themes', async () => {
       card.setConfig({ entities: [], map_provider: 'carto_voyager' } as any);
-      if ((card as any).map) {
-        (card as any).map.remove();
+      const existingMap = asCard(card).map;
+      if (existingMap) {
+        existingMap.remove();
       }
-      (card as any).initMap();
+      asCard(card).initMap();
       await card.updateComplete;
 
       const mapContainer = card.shadowRoot?.getElementById('map');
       expect(mapContainer).not.toBeNull();
-      expect((card as any)._currentProvider).toBe('CartoDB Voyager');
+      expect(asCard(card)._currentProvider).toBe('CartoDB Voyager');
     });
 
     it('toggles manual theme correctly', async () => {
       card.setConfig({ entities: [] });
       await card.updateComplete;
 
-      const initialDark = (card as any).isDarkMode;
-      (card as any)._lastPoints = [{ loc: L.latLng(10, 10), timestamp: '1970-01-01' }];
-      (card as any).toggleManualTheme();
+      const initialDark = asCard(card).isDarkMode;
+      asCard(card)._lastPoints = [{ loc: L.latLng(10, 10), timestamp: '1970-01-01' }];
+      asCard(card).toggleManualTheme();
       await card.updateComplete;
 
-      expect((card as any)._manualTheme).not.toBeNull();
-      expect((card as any).isDarkMode).not.toBe(initialDark);
+      expect(asCard(card)._manualTheme).not.toBeNull();
+      expect(asCard(card).isDarkMode).not.toBe(initialDark);
 
       const mapContainer = card.shadowRoot?.getElementById('map');
-      expect(mapContainer?.classList.contains('dark-mode')).toBe((card as any).isDarkMode);
+      expect(mapContainer?.classList.contains('dark-mode')).toBe(asCard(card).isDarkMode);
     });
 
     it('updates theme class on native hass theme change', async () => {
       card.setConfig({ entities: [] });
       await card.updateComplete;
 
-      (card as any)._lastPoints = [{ loc: L.latLng(10, 10), timestamp: '1970-01-01' }];
+      asCard(card)._lastPoints = [{ loc: L.latLng(10, 10), timestamp: '1970-01-01' }];
 
       const newHass = { ...mockHass, themes: { darkMode: true } };
       card.hass = newHass as any;
@@ -346,7 +400,7 @@ describe('RouteTrackerCard', () => {
       } as unknown as typeof MutationObserver;
       window.MutationObserver = MockMO;
 
-      (card as any).startObservingPanelEditMode();
+      asCard(card).startObservingPanelEditMode();
 
       if (moCallback) {
         (moCallback as () => void)();
@@ -379,7 +433,7 @@ describe('RouteTrackerCard', () => {
       } as unknown as typeof MutationObserver;
       window.MutationObserver = MockMO;
 
-      (card as any).startObservingPanelEditMode();
+      asCard(card).startObservingPanelEditMode();
 
       if (moCallback) {
         (moCallback as () => void)();
@@ -396,7 +450,7 @@ describe('RouteTrackerCard', () => {
       parent.attachShadow({ mode: 'open' });
       parent.shadowRoot?.appendChild(card);
 
-      const ancestors = (card as any).getComposedAncestors();
+      const ancestors = asCard(card).getComposedAncestors();
       expect(ancestors).toContain(parent);
       expect(ancestors).toContain(card);
     });
@@ -410,7 +464,7 @@ describe('RouteTrackerCard', () => {
       const originalGet = shadowRoot.getElementById;
       shadowRoot.getElementById = (): HTMLElement | null => null;
 
-      expect(() => (card as any).initMap()).not.toThrow();
+      expect(() => asCard(card).initMap()).not.toThrow();
 
       shadowRoot.getElementById = originalGet;
     });
@@ -433,73 +487,75 @@ describe('RouteTrackerCard', () => {
       } as unknown as typeof ResizeObserver;
       window.ResizeObserver = MockRO;
 
-      (card as any).mapContainer = document.createElement('div');
-      (card as any).startObservingMapSize();
+      asCard(card).mapContainer = document.createElement('div');
+      asCard(card).startObservingMapSize();
 
       if (roCallback) {
-        (card as any).mapResizeFrame = 123;
+        asCard(card).mapResizeFrame = 123;
         (roCallback as () => void)();
       }
 
-      expect((card as any).mapResizeFrame).toBe(123);
+      expect(asCard(card).mapResizeFrame).toBe(123);
       window.ResizeObserver = originalRO;
     });
 
     it('handles baselayerchange events', async () => {
       card.setConfig({ entities: [] });
-      if ((card as any).map) {
-        (card as any).map.remove();
+      const map1 = asCard(card).map;
+      if (map1) {
+        map1.remove();
       }
-      (card as any).initMap();
+      asCard(card).initMap();
       await card.updateComplete;
 
-      const map = (card as any).map as L.Map;
+      const map = asCard(card).map as L.Map;
       map.fire('baselayerchange', { name: 'Esri Satellite' });
 
-      expect((card as any)._currentProvider).toBe('Esri Satellite');
+      expect(asCard(card)._currentProvider).toBe('Esri Satellite');
       const mapContainer = card.shadowRoot?.getElementById('map');
       expect(mapContainer?.classList.contains('dark-mode')).toBe(false);
     });
 
     it('handles baselayerchange events with points', async () => {
       card.setConfig({ entities: [] });
-      if ((card as any).map) {
-        (card as any).map.remove();
+      const map2 = asCard(card).map;
+      if (map2) {
+        map2.remove();
       }
-      (card as any).initMap();
+      asCard(card).initMap();
       await card.updateComplete;
 
-      (card as any)._lastPoints = [{ loc: L.latLng(10, 10), timestamp: '1970-01-01' }];
-      const map = (card as any).map as L.Map;
+      asCard(card)._lastPoints = [{ loc: L.latLng(10, 10), timestamp: '1970-01-01' }];
+      const map = asCard(card).map as L.Map;
       map.fire('baselayerchange', { name: 'Esri Satellite' });
 
-      expect((card as any)._currentProvider).toBe('Esri Satellite');
+      expect(asCard(card)._currentProvider).toBe('Esri Satellite');
     });
 
     it('handles theme toggles and manual theme', async () => {
       card.setConfig({ entities: [{ entity: 'device_tracker.test' }] } as any);
       await card.updateComplete;
 
-      (card as any)._manualTheme = undefined;
-      (card as any).hass.themes = { darkMode: true };
-      expect((card as any).isDarkMode).toBe(true);
+      asCard(card)._manualTheme = undefined;
+      asCard(card).hass.themes = { darkMode: true } as any;
+      expect(asCard(card).isDarkMode).toBe(true);
 
-      (card as any).hass.themes = { darkMode: false };
-      expect((card as any).isDarkMode).toBe(false);
+      asCard(card).hass.themes = { darkMode: false } as any;
+      expect(asCard(card).isDarkMode).toBe(false);
 
       card.setConfig({ entities: [], theme_mode: 'dark' });
-      expect((card as any).isDarkMode).toBe(true);
+      expect(asCard(card).isDarkMode).toBe(true);
 
       card.setConfig({ entities: [], theme_mode: 'light' });
-      expect((card as any).isDarkMode).toBe(false);
+      expect(asCard(card).isDarkMode).toBe(false);
 
-      (card as any).toggleManualTheme();
-      expect((card as any)._manualTheme).toBe('dark');
-      expect((card as any).isDarkMode).toBe(true);
+      asCard(card).toggleManualTheme();
+      expect(asCard(card)._manualTheme).toBe('dark');
+      expect(asCard(card).isDarkMode).toBe(true);
 
-      (card as any).toggleManualTheme();
-      expect((card as any)._manualTheme).toBe('light');
-      expect((card as any).isDarkMode).toBe(false);
+      asCard(card).toggleManualTheme();
+      expect(asCard(card)._manualTheme).toBe('light');
+      expect(asCard(card).isDarkMode).toBe(false);
     });
 
     it('falls back to en language in render when hass.language is not provided', async () => {
@@ -516,12 +572,13 @@ describe('RouteTrackerCard', () => {
       const originalHass = card.hass;
       card.hass = { ...originalHass, language: undefined } as any;
 
-      if ((card as any).map) {
-        (card as any).map.remove();
-        (card as any).map = undefined;
+      const existingMap = asCard(card).map;
+      if (existingMap) {
+        existingMap.remove();
+        asCard(card).map = undefined;
       }
 
-      (card as any).initMap();
+      asCard(card).initMap();
 
       const mapContainer = card.shadowRoot?.querySelector('.card-content');
       expect(mapContainer).not.toBeNull();
@@ -530,40 +587,43 @@ describe('RouteTrackerCard', () => {
 
     it('handles initMap with missing defaultLayer', async () => {
       card.setConfig({ entities: [] });
-      if ((card as any).map) {
-        (card as any).map.remove();
-        (card as any).map = undefined;
+      const map3 = asCard(card).map;
+      if (map3) {
+        map3.remove();
+        asCard(card).map = undefined;
       }
 
       const spy = vi.spyOn(mapProviders, 'getBaseMaps').mockReturnValue({} as any);
-      expect(() => (card as any).initMap()).not.toThrow();
+      expect(() => asCard(card).initMap()).not.toThrow();
       spy.mockRestore();
     });
 
     it('initializes map with esri_satellite provider', async () => {
       card.setConfig({ entities: [], map_provider: 'esri_satellite' });
-      if ((card as any).map) {
-        (card as any).map.remove();
+      const existingMap = asCard(card).map;
+      if (existingMap) {
+        existingMap.remove();
       }
-      (card as any).initMap();
+      asCard(card).initMap();
       await card.updateComplete;
 
-      expect((card as any)._currentProvider).toBe('Esri Satellite');
+      expect(asCard(card)._currentProvider).toBe('Esri Satellite');
     });
 
     it('fits bounds on reset control click', async () => {
       card.setConfig({ entities: [{ entity: 'device_tracker.test' }] } as any);
-      if ((card as any).map) {
-        (card as any).map.remove();
+      const existingMap = asCard(card).map;
+      if (existingMap) {
+        existingMap.remove();
       }
-      (card as any).initMap();
+      asCard(card).initMap();
       await card.updateComplete;
 
       const mapContainer = card.shadowRoot?.getElementById('map');
       const controls = mapContainer?.querySelectorAll('.leaflet-control a');
 
-      (card as any).routeBounds = L.latLngBounds(L.latLng(10, 10), L.latLng(20, 20));
-      (card as any).map.fitBounds = vi.fn();
+      asCard(card).routeBounds = L.latLngBounds(L.latLng(10, 10), L.latLng(20, 20));
+      assertDefined(asCard(card).map).fitBounds = vi.fn();
 
       if (controls) {
         controls.forEach((c) => {
@@ -574,32 +634,32 @@ describe('RouteTrackerCard', () => {
           }
         });
       }
-      expect((card as any).map.fitBounds).toHaveBeenCalled();
+      expect(assertDefined(asCard(card).map).fitBounds).toHaveBeenCalled();
     });
 
     it('re-draws route on hass theme change if points exist', async () => {
       card.setConfig({ entities: [] });
       await card.updateComplete;
 
-      (card as any)._lastPoints = [{ loc: L.latLng(10, 10), timestamp: '1970-01-01' }];
+      asCard(card)._lastPoints = [{ loc: L.latLng(10, 10), timestamp: '1970-01-01' }];
 
       const newHass = { ...card.hass, themes: { darkMode: true } };
       card.hass = newHass as any;
       await card.updateComplete;
 
-      expect((card as any)._lastIsDark).toBe(true);
+      expect(asCard(card)._lastIsDark).toBe(true);
     });
 
     it('handles theme change when lastPoints is undefined (fallback check)', async () => {
       card.setConfig({ entities: [] });
       await card.updateComplete;
 
-      (card as any)._lastPoints = undefined;
+      asCard(card)._lastPoints = undefined;
       const newHass = { ...card.hass, themes: { darkMode: true } };
       card.hass = newHass as any;
       await card.updateComplete;
 
-      expect((card as any)._lastIsDark).toBe(true);
+      expect(asCard(card)._lastIsDark).toBe(true);
     });
 
     it('draws zones on map', async () => {
@@ -637,9 +697,9 @@ describe('RouteTrackerCard', () => {
         ],
       });
       await card.updateComplete;
-      (card as any).drawZones();
+      asCard(card).drawZones();
 
-      const zoneLayer = (card as any).zoneLayer as L.FeatureGroup;
+      const zoneLayer = asCard(card).zoneLayer as L.FeatureGroup;
       expect(zoneLayer.getLayers().length).toBe(6);
     });
 
@@ -652,10 +712,11 @@ describe('RouteTrackerCard', () => {
       if (!mapContainer) return;
 
       Object.defineProperty(mapContainer, 'parentElement', { configurable: true, value: null });
-      if ((card as any).map) {
-        (card as any).map.remove();
+      const existingMap = asCard(card).map;
+      if (existingMap) {
+        existingMap.remove();
       }
-      expect(() => (card as any).initMap()).not.toThrow();
+      expect(() => asCard(card).initMap()).not.toThrow();
       Object.defineProperty(mapContainer, 'parentElement', {
         configurable: true,
         value: card.shadowRoot?.querySelector('.card-content'),
@@ -665,17 +726,17 @@ describe('RouteTrackerCard', () => {
     it('returns early in drawZones if map or layer is missing', async () => {
       card.setConfig({ entities: [] });
       await card.updateComplete;
-      (card as any).map = null;
-      expect(() => (card as any).drawZones()).not.toThrow();
+      asCard(card).map = null;
+      expect(() => asCard(card).drawZones()).not.toThrow();
     });
 
     it('returns early in updateMapThemeClass if mapContainer is missing', async () => {
       card.setConfig({ entities: [] });
       await card.updateComplete;
-      const originalContainer = (card as any).mapContainer;
-      (card as any).mapContainer = null;
-      expect(() => (card as any).updateMapThemeClass()).not.toThrow();
-      (card as any).mapContainer = originalContainer;
+      const originalContainer = asCard(card).mapContainer;
+      asCard(card).mapContainer = null;
+      expect(() => asCard(card).updateMapThemeClass()).not.toThrow();
+      asCard(card).mapContainer = originalContainer;
     });
 
     it('skips zones without valid coordinates', async () => {
@@ -686,7 +747,7 @@ describe('RouteTrackerCard', () => {
       card.setConfig({ entities: [], zones: [{ entity: 'zone.invalid' }] });
       await card.updateComplete;
 
-      const zoneLayer = (card as any).zoneLayer as L.FeatureGroup;
+      const zoneLayer = asCard(card).zoneLayer as L.FeatureGroup;
       expect(zoneLayer.getLayers().length).toBe(0);
     });
 
@@ -694,18 +755,18 @@ describe('RouteTrackerCard', () => {
       card.setConfig({ entities: [] });
       await card.updateComplete;
 
-      let loc = (card as any).resolveLocation({
+      let loc = asCard(card).resolveLocation({
         attributes: { latitude: 12.34, longitude: 56.78 },
       });
       expect(loc).toEqual([12.34, 56.78]);
 
-      loc = (card as any).resolveLocation({ attributes: { latitude: 0, longitude: 0 } });
+      loc = asCard(card).resolveLocation({ attributes: { latitude: 0, longitude: 0 } });
       expect(loc).toBeNull();
 
       mockHass.states['zone.work'] = {
         attributes: { latitude: 44.44, longitude: 55.55 },
       } as any;
-      loc = (card as any).resolveLocation({
+      loc = asCard(card).resolveLocation({
         attributes: {},
         state: 'work',
       });
@@ -714,18 +775,18 @@ describe('RouteTrackerCard', () => {
       mockHass.states['zone.invalid_loc'] = {
         attributes: { latitude: 'invalid', longitude: 'invalid' },
       } as any;
-      loc = (card as any).resolveLocation({
+      loc = asCard(card).resolveLocation({
         attributes: {},
         state: 'invalid_loc',
       });
       expect(loc).toBeNull();
 
-      expect((card as any).resolveLocation(null)).toBeNull();
+      expect(asCard(card).resolveLocation(null)).toBeNull();
 
       mockHass.states['zone.partial'] = {
         attributes: { latitude: 50.0 },
       } as any;
-      loc = (card as any).resolveLocation({
+      loc = asCard(card).resolveLocation({
         attributes: {},
         state: 'partial',
       });
@@ -744,23 +805,23 @@ describe('RouteTrackerCard', () => {
 
     it('returns early in fetchAndDrawRoute if missing device or date', async () => {
       card.setConfig({ entities: [{ entity: 'device_tracker.test' }] } as any);
-      (card as any).selectedDevice = '';
-      (card as any).selectedDate = '';
-      const promise = (card as any).fetchAndDrawRoute();
+      asCard(card).selectedDevice = '';
+      asCard(card).selectedDate = '';
+      const promise = asCard(card).fetchAndDrawRoute();
       await expect(promise).resolves.toBeUndefined();
     });
 
     it('returns early in drawRoute if map or layer is missing', async () => {
       card.setConfig({ entities: [] });
-      (card as any).map = null;
-      (card as any).routeLayer = null;
-      expect(() => (card as any).drawRoute([])).not.toThrow();
+      asCard(card).map = null;
+      asCard(card).routeLayer = null;
+      expect(() => asCard(card).drawRoute([])).not.toThrow();
     });
 
     it('fetches history and handles nested arrays correctly', async () => {
       card.setConfig({ entities: [{ entity: 'device_tracker.test' }] } as any);
-      (card as any).selectedDevice = 'device_tracker.test';
-      (card as any).selectedDate = '1970-01-01';
+      asCard(card).selectedDevice = 'device_tracker.test';
+      asCard(card).selectedDate = '1970-01-01';
 
       await card.updateComplete;
 
@@ -776,7 +837,7 @@ describe('RouteTrackerCard', () => {
         { not: 'array' },
       ]);
 
-      await (card as any).fetchAndDrawRoute();
+      await asCard(card).fetchAndDrawRoute();
       expect(mockHass.callApi).toHaveBeenCalled();
     });
 
@@ -806,8 +867,8 @@ describe('RouteTrackerCard', () => {
       } as any;
 
       card.setConfig({ entities: [{ entity: 'device_tracker.test' }], minimal_distance: 0 });
-      (card as any).selectedDevice = 'device_tracker.test';
-      (card as any).selectedDate = '1970-01-01';
+      asCard(card).selectedDevice = 'device_tracker.test';
+      asCard(card).selectedDate = '1970-01-01';
       await card.updateComplete;
 
       await new Promise((resolve) => setTimeout(resolve, 150));
@@ -818,7 +879,7 @@ describe('RouteTrackerCard', () => {
       expect(callArgs[1]).toContain('history/period/');
       expect(callArgs[1]).toContain('filter_entity_id=device_tracker.test');
 
-      const points = (card as any)._lastPoints;
+      const points = assertDefined(asCard(card)._lastPoints);
       expect(points.length).toBe(3);
     });
 
@@ -845,8 +906,8 @@ describe('RouteTrackerCard', () => {
       card.setConfig({ entities: [{ entity: 'person.john' }] });
       await card.updateComplete;
 
-      (card as any).selectedDevice = 'person.john';
-      (card as any).selectedDate = '1970-01-01';
+      asCard(card).selectedDevice = 'person.john';
+      asCard(card).selectedDate = '1970-01-01';
       await card.updateComplete;
 
       await new Promise((resolve) => setTimeout(resolve, 150));
@@ -861,10 +922,11 @@ describe('RouteTrackerCard', () => {
         expect.stringContaining('filter_entity_id=sensor.virtual_device_tracker_phone'),
       );
 
-      const points = (card as any)._lastPoints;
+      const points = assertDefined(asCard(card)._lastPoints);
       expect(points.length).toBeGreaterThan(0);
-      expect(points[points.length - 1].loc.lat).toBe(21);
-      expect(points[points.length - 1].loc.lng).toBe(21);
+      const lastPoint1 = assertDefined(points[points.length - 1]);
+      expect(lastPoint1.loc.lat).toBe(21);
+      expect(lastPoint1.loc.lng).toBe(21);
     });
 
     it('filters out points based on minimal_distance', async () => {
@@ -892,13 +954,13 @@ describe('RouteTrackerCard', () => {
       card.setConfig({ entities: [{ entity: 'device_tracker.test' }], minimal_distance: 5000 });
       await card.updateComplete;
 
-      (card as any).selectedDevice = 'device_tracker.test';
-      (card as any).selectedDate = '1970-01-01';
+      asCard(card).selectedDevice = 'device_tracker.test';
+      asCard(card).selectedDate = '1970-01-01';
       await card.updateComplete;
 
       await new Promise((resolve) => setTimeout(resolve, 150));
 
-      const points = (card as any)._lastPoints;
+      const points = assertDefined(asCard(card)._lastPoints);
       expect(points.length).toBe(1);
     });
 
@@ -907,8 +969,8 @@ describe('RouteTrackerCard', () => {
       card.setConfig({ entities: [] });
       await card.updateComplete;
 
-      (card as any).selectedDevice = 'device_tracker.test';
-      (card as any).selectedDate = '1970-01-01';
+      asCard(card).selectedDevice = 'device_tracker.test';
+      asCard(card).selectedDate = '1970-01-01';
       await card.updateComplete;
 
       await new Promise((resolve) => setTimeout(resolve, 150));
@@ -928,16 +990,16 @@ describe('RouteTrackerCard', () => {
       card.setConfig({ entities: [{ entity: 'device_tracker.test' }], minimal_distance: 0 });
       await card.updateComplete;
 
-      (card as any).selectedDevice = 'device_tracker.test';
-      (card as any).selectedDate = '1970-01-01';
+      asCard(card).selectedDevice = 'device_tracker.test';
+      asCard(card).selectedDate = '1970-01-01';
       await card.updateComplete;
 
       await new Promise((resolve) => setTimeout(resolve, 150));
 
-      const points = (card as any)._lastPoints;
+      const points = assertDefined(asCard(card)._lastPoints);
       expect(points.length).toBe(1);
 
-      (card as any).toggleManualTheme();
+      asCard(card).toggleManualTheme();
     });
 
     it('handles person with no virtual sensors gracefully', async () => {
@@ -958,15 +1020,16 @@ describe('RouteTrackerCard', () => {
       card.setConfig({ entities: [{ entity: 'person.jane' }] });
       await card.updateComplete;
 
-      (card as any).selectedDevice = 'person.jane';
-      (card as any).selectedDate = '1970-01-01';
+      asCard(card).selectedDevice = 'person.jane';
+      asCard(card).selectedDate = '1970-01-01';
       await card.updateComplete;
 
       await new Promise((resolve) => setTimeout(resolve, 150));
 
-      const points = (card as any)._lastPoints;
+      const points = assertDefined(asCard(card)._lastPoints);
       expect(points.length).toBeGreaterThan(0);
-      expect(points[points.length - 1].loc.lat).toBe(30);
+      const lastPoint2 = assertDefined(points[points.length - 1]);
+      expect(lastPoint2.loc.lat).toBe(30);
     });
 
     it('handles map control clicks (reset and theme toggle)', async () => {
@@ -988,7 +1051,7 @@ describe('RouteTrackerCard', () => {
         }
       });
 
-      expect((card as any).map).toBeDefined();
+      expect(asCard(card).map).toBeDefined();
     });
 
     it('builds route point with all optional attributes', () => {
@@ -1004,7 +1067,10 @@ describe('RouteTrackerCard', () => {
         },
         last_updated: '1970-01-01T00:00:00Z',
       };
-      const point = (RouteTrackerCard as any).buildRoutePoint(state, [10, 20]);
+      const point = (RouteTrackerCard as unknown as CardStaticInternals).buildRoutePoint(
+        state,
+        [10, 20],
+      );
       expect(point.altitude).toBe(150);
       expect(point.battery_level).toBe(85);
       expect(point.gps_accuracy).toBe(5);
@@ -1032,13 +1098,13 @@ describe('RouteTrackerCard', () => {
       card.setConfig({ entities: [{ entity: 'device_tracker.test' }] });
       await card.updateComplete;
 
-      (card as any).selectedDevice = 'device_tracker.test';
-      (card as any).selectedDate = '1970-01-01';
+      asCard(card).selectedDevice = 'device_tracker.test';
+      asCard(card).selectedDate = '1970-01-01';
       await card.updateComplete;
 
       await new Promise((resolve) => setTimeout(resolve, 150));
 
-      const points = (card as any)._lastPoints;
+      const points = assertDefined(asCard(card)._lastPoints);
       expect(points.length).toBe(2);
     });
   });
