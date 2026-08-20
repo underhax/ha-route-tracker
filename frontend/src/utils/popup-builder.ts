@@ -33,6 +33,152 @@ interface HassForPopup {
   states?: Record<string, ZoneState>;
 }
 
+type CreateAttrNode = (iconSvg: string, valueText: string, titleLabel: string) => HTMLElement;
+
+function buildExtraAttributeNodes(
+  point: RoutePoint,
+  language: string,
+  localize: (key: string, lang: string) => string,
+  speedUnit: string,
+  altUnit: string,
+  createAttrNode: CreateAttrNode,
+): HTMLElement[] {
+  const nodes: HTMLElement[] = [];
+  if (point.source_type) {
+    nodes.push(
+      createAttrNode(
+        sourceSvg,
+        point.source_type,
+        `${localize('card.source_type', language) || 'Source'}: ${point.source_type}`,
+      ),
+    );
+  }
+  if (point.gps_accuracy !== undefined && point.gps_accuracy !== 0) {
+    const unitM = localize('card.unit_m', language) || 'm';
+    nodes.push(
+      createAttrNode(
+        accuracySvg,
+        `${point.gps_accuracy} ${unitM}`,
+        `${localize('card.gps_accuracy', language) || 'Accuracy'}: ${point.gps_accuracy} ${unitM}`,
+      ),
+    );
+  }
+  if (point.altitude !== undefined) {
+    nodes.push(
+      createAttrNode(
+        altitudeSvg,
+        `${point.altitude} ${altUnit}`,
+        `${localize('card.altitude', language) || 'Altitude'}: ${point.altitude} ${altUnit}`,
+      ),
+    );
+  }
+  if (point.speed !== undefined && point.speed !== 0) {
+    nodes.push(
+      createAttrNode(
+        speedSvg,
+        `${point.speed} ${speedUnit}`,
+        `${localize('card.speed', language) || 'Speed'}: ${point.speed} ${speedUnit}`,
+      ),
+    );
+  }
+  if (point.battery_level !== undefined) {
+    nodes.push(
+      createAttrNode(
+        batterySvg,
+        `${point.battery_level}%`,
+        `${localize('card.battery_level', language) || 'Battery'}: ${point.battery_level}%`,
+      ),
+    );
+  }
+  return nodes;
+}
+
+function resolveRouteOrigin(
+  routeOrigin: string,
+  hass?: HassForPopup,
+): { lat: number; lng: number } | null {
+  if (!routeOrigin.startsWith('zone.') || !hass?.states?.[routeOrigin]) return null;
+
+  const stateObj = hass.states[routeOrigin];
+  if (
+    !stateObj.attributes ||
+    !('latitude' in stateObj.attributes) ||
+    !('longitude' in stateObj.attributes)
+  ) {
+    return null;
+  }
+
+  const lat = parseFloat(stateObj.attributes.latitude);
+  const lng = parseFloat(stateObj.attributes.longitude);
+  if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
+
+  return { lat, lng };
+}
+
+function appendGeocodingSection(
+  container: HTMLElement,
+  point: RoutePoint,
+  language: string,
+  localize: (key: string, lang: string) => string,
+): void {
+  const divider = document.createElement('div');
+  divider.className = 'rt-popup-divider';
+  container.appendChild(divider);
+
+  const geocodeBtn = document.createElement('button');
+  geocodeBtn.className = 'rt-popup-geocode-btn';
+  const labelText = localize('card.get_address', language) || 'Get Address';
+  geocodeBtn.innerHTML = `${searchSvg}<span>${labelText}</span>`;
+
+  geocodeBtn.onclick = async (): Promise<void> => {
+    geocodeBtn.disabled = true;
+    geocodeBtn.style.opacity = '0.5';
+
+    const address = await fetchAddress(point.loc.lat, point.loc.lng, language);
+
+    if (address) {
+      const addressEl = document.createElement('div');
+      addressEl.className = 'rt-popup-address';
+      addressEl.textContent = address;
+      container.replaceChild(addressEl, geocodeBtn);
+    } else {
+      geocodeBtn.disabled = false;
+      geocodeBtn.style.opacity = '1';
+    }
+  };
+
+  container.appendChild(geocodeBtn);
+}
+
+function appendRoutingSection(
+  container: HTMLElement,
+  point: RoutePoint,
+  language: string,
+  localize: (key: string, lang: string) => string,
+  routingProvider: string,
+  routeOrigin: string,
+  hass?: HassForPopup,
+): void {
+  const routeDivider = document.createElement('div');
+  routeDivider.className = 'rt-popup-divider';
+  container.appendChild(routeDivider);
+
+  const routeBtn = document.createElement('a');
+  routeBtn.className = 'rt-popup-route-btn';
+  routeBtn.target = '_blank';
+  routeBtn.rel = 'noopener noreferrer';
+
+  const origin = resolveRouteOrigin(routeOrigin, hass);
+
+  const provider = resolveRoutingProvider(routingProvider);
+  routeBtn.href = provider.buildUrl(point.loc.lat, point.loc.lng, origin?.lat, origin?.lng);
+
+  const routeLabelText = localize('card.build_route', language) || 'Build Route';
+  routeBtn.innerHTML = `${routeSvg}<span>${routeLabelText}</span>`;
+
+  container.appendChild(routeBtn);
+}
+
 export function buildPopupContent(
   point: RoutePoint,
   language: string,
@@ -65,8 +211,8 @@ export function buildPopupContent(
   copyBtn.innerHTML = copySvg;
   copyBtn.title = localize('card.copy_coords', language) || 'Copy coordinates';
 
-  copyBtn.onclick = () => {
-    navigator.clipboard.writeText(coordsTextCopy).then(() => {
+  copyBtn.onclick = (): void => {
+    navigator.clipboard.writeText(coordsTextCopy).then((): void => {
       copyBtn.innerHTML = checkSvg;
       copyBtn.classList.add('copied');
       setTimeout(() => {
@@ -79,8 +225,6 @@ export function buildPopupContent(
   coordsContainer.appendChild(coordsSpan);
   coordsContainer.appendChild(copyBtn);
   container.appendChild(coordsContainer);
-
-  const extraParts: HTMLElement[] = [];
 
   let speedUnit = localize('card.unit_kmh', language) || 'km/h';
   let altUnit = localize('card.unit_m', language) || 'm';
@@ -97,52 +241,14 @@ export function buildPopupContent(
     return attrDiv;
   };
 
-  if (point.source_type) {
-    extraParts.push(
-      createAttrNode(
-        sourceSvg,
-        point.source_type,
-        `${localize('card.source_type', language) || 'Source'}: ${point.source_type}`,
-      ),
-    );
-  }
-  if (point.gps_accuracy !== undefined && point.gps_accuracy !== 0) {
-    const unitM = localize('card.unit_m', language) || 'm';
-    extraParts.push(
-      createAttrNode(
-        accuracySvg,
-        `${point.gps_accuracy} ${unitM}`,
-        `${localize('card.gps_accuracy', language) || 'Accuracy'}: ${point.gps_accuracy} ${unitM}`,
-      ),
-    );
-  }
-  if (point.altitude !== undefined) {
-    extraParts.push(
-      createAttrNode(
-        altitudeSvg,
-        `${point.altitude} ${altUnit}`,
-        `${localize('card.altitude', language) || 'Altitude'}: ${point.altitude} ${altUnit}`,
-      ),
-    );
-  }
-  if (point.speed !== undefined && point.speed !== 0) {
-    extraParts.push(
-      createAttrNode(
-        speedSvg,
-        `${point.speed} ${speedUnit}`,
-        `${localize('card.speed', language) || 'Speed'}: ${point.speed} ${speedUnit}`,
-      ),
-    );
-  }
-  if (point.battery_level !== undefined) {
-    extraParts.push(
-      createAttrNode(
-        batterySvg,
-        `${point.battery_level}%`,
-        `${localize('card.battery_level', language) || 'Battery'}: ${point.battery_level}%`,
-      ),
-    );
-  }
+  const extraParts = buildExtraAttributeNodes(
+    point,
+    language,
+    localize,
+    speedUnit,
+    altUnit,
+    createAttrNode,
+  );
 
   if (extraParts.length > 0) {
     const extraContainer = document.createElement('div');
@@ -159,71 +265,11 @@ export function buildPopupContent(
   }
 
   if (enableGeocoding) {
-    const divider = document.createElement('div');
-    divider.className = 'rt-popup-divider';
-    container.appendChild(divider);
-
-    const geocodeBtn = document.createElement('button');
-    geocodeBtn.className = 'rt-popup-geocode-btn';
-    const labelText = localize('card.get_address', language) || 'Get Address';
-    geocodeBtn.innerHTML = `${searchSvg}<span>${labelText}</span>`;
-
-    geocodeBtn.onclick = async () => {
-      geocodeBtn.disabled = true;
-      geocodeBtn.style.opacity = '0.5';
-
-      const address = await fetchAddress(point.loc.lat, point.loc.lng, language);
-
-      if (address) {
-        const addressEl = document.createElement('div');
-        addressEl.className = 'rt-popup-address';
-        addressEl.textContent = address;
-        container.replaceChild(addressEl, geocodeBtn);
-      } else {
-        geocodeBtn.disabled = false;
-        geocodeBtn.style.opacity = '1';
-      }
-    };
-
-    container.appendChild(geocodeBtn);
+    appendGeocodingSection(container, point, language, localize);
   }
 
   if (enableRouting) {
-    const routeDivider = document.createElement('div');
-    routeDivider.className = 'rt-popup-divider';
-    container.appendChild(routeDivider);
-
-    const routeBtn = document.createElement('a');
-    routeBtn.className = 'rt-popup-route-btn';
-    routeBtn.target = '_blank';
-    routeBtn.rel = 'noopener noreferrer';
-
-    let originLat: number | undefined;
-    let originLng: number | undefined;
-
-    if (routeOrigin.startsWith('zone.') && hass?.states?.[routeOrigin]) {
-      const stateObj = hass.states[routeOrigin];
-      if (
-        stateObj.attributes &&
-        'latitude' in stateObj.attributes &&
-        'longitude' in stateObj.attributes
-      ) {
-        originLat = parseFloat(stateObj.attributes.latitude);
-        originLng = parseFloat(stateObj.attributes.longitude);
-        if (Number.isNaN(originLat) || Number.isNaN(originLng)) {
-          originLat = undefined;
-          originLng = undefined;
-        }
-      }
-    }
-
-    const provider = resolveRoutingProvider(routingProvider);
-    routeBtn.href = provider.buildUrl(point.loc.lat, point.loc.lng, originLat, originLng);
-
-    const routeLabelText = localize('card.build_route', language) || 'Build Route';
-    routeBtn.innerHTML = `${routeSvg}<span>${routeLabelText}</span>`;
-
-    container.appendChild(routeBtn);
+    appendRoutingSection(container, point, language, localize, routingProvider, routeOrigin, hass);
   }
 
   return container;

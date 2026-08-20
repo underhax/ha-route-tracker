@@ -32,15 +32,15 @@ describe('RouteTrackerCard', () => {
     vi.restoreAllMocks();
   });
 
-  describe('Static Methods', () => {
+  describe('getConfigElement()', () => {
     it('returns an editor element via getConfigElement()', async () => {
       const editor = await RouteTrackerCard.getConfigElement();
       expect(editor.tagName.toLowerCase()).toBe('route-tracker-card-editor');
     });
 
     it('returns a default configuration via getStubConfig()', () => {
-      const stub = RouteTrackerCard.getStubConfig();
-      expect(stub['type']).toBe('custom:route-tracker-card');
+      const stub = RouteTrackerCard.getStubConfig() as { type: string };
+      expect(stub.type).toBe('custom:route-tracker-card');
     });
 
     it('getCardSize returns a number', () => {
@@ -58,7 +58,7 @@ describe('RouteTrackerCard', () => {
     });
   });
 
-  describe('UI Interactions', () => {
+  describe('openControls()', () => {
     beforeEach(async () => {
       card.setConfig({ entities: [] } as any);
       await card.updateComplete;
@@ -83,7 +83,7 @@ describe('RouteTrackerCard', () => {
     });
   });
 
-  describe('Input Handlers', () => {
+  describe('handleDeviceChange()', () => {
     beforeEach(async () => {
       card.setConfig({ entities: [] } as any);
       await card.updateComplete;
@@ -92,33 +92,31 @@ describe('RouteTrackerCard', () => {
     });
 
     it('handles device change', () => {
-      const select = card.shadowRoot?.querySelector('select');
+      const select = card.shadowRoot?.querySelector('select') as HTMLSelectElement | null;
       expect(select).not.toBeNull();
+      if (!select) return;
 
-      if (select) {
-        const option = document.createElement('option');
-        option.value = 'device.new';
-        select.appendChild(option);
+      const option = document.createElement('option');
+      option.value = 'device.new';
+      select.appendChild(option);
 
-        select.value = 'device.new';
-        select.dispatchEvent(new Event('change'));
-        expect((card as any).selectedDevice).toBe('device.new');
-      }
+      select.value = 'device.new';
+      select.dispatchEvent(new Event('change'));
+      expect((card as any).selectedDevice).toBe('device.new');
     });
 
     it('handles date change', () => {
-      const input = card.shadowRoot?.querySelector('input[type="date"]');
+      const input = card.shadowRoot?.querySelector('input[type="date"]') as HTMLInputElement | null;
       expect(input).not.toBeNull();
+      if (!input) return;
 
-      if (input) {
-        (input as HTMLInputElement).value = '1970-01-01';
-        input.dispatchEvent(new Event('change'));
-        expect((card as any).selectedDate).toBe('1970-01-01');
-      }
+      input.value = '1970-01-01';
+      input.dispatchEvent(new Event('change'));
+      expect((card as any).selectedDate).toBe('1970-01-01');
     });
   });
 
-  describe('loadDevices', () => {
+  describe('loadDevices()', () => {
     it('filters out invalid entities from config', async () => {
       mockHass.states = {
         'device_tracker.valid': {
@@ -222,7 +220,7 @@ describe('RouteTrackerCard', () => {
     });
   });
 
-  describe('Date Formatting and Observers', () => {
+  describe('getLocalDateString()', () => {
     it('formats max date using hass timezone if available', async () => {
       mockHass.config.time_zone = 'Asia/Tokyo';
       card.setConfig({ entities: [] } as any);
@@ -248,17 +246,20 @@ describe('RouteTrackerCard', () => {
       (card as any).map = { invalidateSize: vi.fn() };
 
       const originalRaf = window.requestAnimationFrame;
-      window.requestAnimationFrame = (cb) => setTimeout(cb, 0) as unknown as number;
+      window.requestAnimationFrame = (cb: FrameRequestCallback): number =>
+        setTimeout(cb, 0) as unknown as number;
 
       const originalRO = window.ResizeObserver;
       let roCallback: (() => void) | null = null;
-      window.ResizeObserver = class {
-        constructor(cb: () => void) {
-          roCallback = cb;
-        }
-        observe() {}
-        disconnect() {}
-      } as any;
+      const MockRO = function (
+        this: { observe: () => void; disconnect: () => void },
+        cb: () => void,
+      ): void {
+        roCallback = cb;
+        this.observe = (): void => {};
+        this.disconnect = (): void => {};
+      } as unknown as typeof ResizeObserver;
+      window.ResizeObserver = MockRO;
 
       await card.updateComplete;
 
@@ -283,7 +284,7 @@ describe('RouteTrackerCard', () => {
     });
   });
 
-  describe('Map and Zones', () => {
+  describe('initMap()', () => {
     it('initializes map with proper providers and themes', async () => {
       card.setConfig({ entities: [], map_provider: 'carto_voyager' } as any);
       if ((card as any).map) {
@@ -310,11 +311,7 @@ describe('RouteTrackerCard', () => {
       expect((card as any).isDarkMode).not.toBe(initialDark);
 
       const mapContainer = card.shadowRoot?.getElementById('map');
-      if ((card as any).isDarkMode) {
-        expect(mapContainer?.classList.contains('dark-mode')).toBe(true);
-      } else {
-        expect(mapContainer?.classList.contains('dark-mode')).toBe(false);
-      }
+      expect(mapContainer?.classList.contains('dark-mode')).toBe((card as any).isDarkMode);
     });
 
     it('updates theme class on native hass theme change', async () => {
@@ -339,13 +336,15 @@ describe('RouteTrackerCard', () => {
 
       const originalMO = window.MutationObserver;
       let moCallback: (() => void) | null = null;
-      window.MutationObserver = class {
-        constructor(cb: () => void) {
-          moCallback = cb;
-        }
-        observe() {}
-        disconnect() {}
-      } as any;
+      const MockMO = function (
+        this: { observe: () => void; disconnect: () => void },
+        cb: () => void,
+      ): void {
+        moCallback = cb;
+        this.observe = (): void => {};
+        this.disconnect = (): void => {};
+      } as unknown as typeof MutationObserver;
+      window.MutationObserver = MockMO;
 
       (card as any).startObservingPanelEditMode();
 
@@ -370,13 +369,15 @@ describe('RouteTrackerCard', () => {
 
       const originalMO = window.MutationObserver;
       let moCallback: (() => void) | null = null;
-      window.MutationObserver = class {
-        constructor(cb: () => void) {
-          moCallback = cb;
-        }
-        observe() {}
-        disconnect() {}
-      } as any;
+      const MockMO = function (
+        this: { observe: () => void; disconnect: () => void },
+        cb: () => void,
+      ): void {
+        moCallback = cb;
+        this.observe = (): void => {};
+        this.disconnect = (): void => {};
+      } as unknown as typeof MutationObserver;
+      window.MutationObserver = MockMO;
 
       (card as any).startObservingPanelEditMode();
 
@@ -404,12 +405,14 @@ describe('RouteTrackerCard', () => {
       card.setConfig({ entities: [] });
       await card.updateComplete;
 
-      const originalGet = card.shadowRoot!.getElementById;
-      card.shadowRoot!.getElementById = () => null;
+      const shadowRoot = card.shadowRoot;
+      if (!shadowRoot) return;
+      const originalGet = shadowRoot.getElementById;
+      shadowRoot.getElementById = (): HTMLElement | null => null;
 
       expect(() => (card as any).initMap()).not.toThrow();
 
-      card.shadowRoot!.getElementById = originalGet;
+      shadowRoot.getElementById = originalGet;
     });
 
     it('returns early in ResizeObserver if frame is already pending', async () => {
@@ -420,13 +423,15 @@ describe('RouteTrackerCard', () => {
 
       const originalRO = window.ResizeObserver;
       let roCallback: (() => void) | null = null;
-      window.ResizeObserver = class {
-        constructor(cb: () => void) {
-          roCallback = cb;
-        }
-        observe() {}
-        disconnect() {}
-      } as any;
+      const MockRO = function (
+        this: { observe: () => void; disconnect: () => void },
+        cb: () => void,
+      ): void {
+        roCallback = cb;
+        this.observe = (): void => {};
+        this.disconnect = (): void => {};
+      } as unknown as typeof ResizeObserver;
+      window.ResizeObserver = MockRO;
 
       (card as any).mapContainer = document.createElement('div');
       (card as any).startObservingMapSize();
@@ -436,6 +441,7 @@ describe('RouteTrackerCard', () => {
         (roCallback as () => void)();
       }
 
+      expect((card as any).mapResizeFrame).toBe(123);
       window.ResizeObserver = originalRO;
     });
 
@@ -642,17 +648,18 @@ describe('RouteTrackerCard', () => {
       await card.updateComplete;
 
       const mapContainer = card.shadowRoot?.getElementById('map');
-      if (mapContainer) {
-        Object.defineProperty(mapContainer, 'parentElement', { configurable: true, value: null });
-        if ((card as any).map) {
-          (card as any).map.remove();
-        }
-        expect(() => (card as any).initMap()).not.toThrow();
-        Object.defineProperty(mapContainer, 'parentElement', {
-          configurable: true,
-          value: card.shadowRoot?.querySelector('.card-content'),
-        });
+      expect(mapContainer).not.toBeNull();
+      if (!mapContainer) return;
+
+      Object.defineProperty(mapContainer, 'parentElement', { configurable: true, value: null });
+      if ((card as any).map) {
+        (card as any).map.remove();
       }
+      expect(() => (card as any).initMap()).not.toThrow();
+      Object.defineProperty(mapContainer, 'parentElement', {
+        configurable: true,
+        value: card.shadowRoot?.querySelector('.card-content'),
+      });
     });
 
     it('returns early in drawZones if map or layer is missing', async () => {
@@ -714,10 +721,19 @@ describe('RouteTrackerCard', () => {
       expect(loc).toBeNull();
 
       expect((card as any).resolveLocation(null)).toBeNull();
+
+      mockHass.states['zone.partial'] = {
+        attributes: { latitude: 50.0 },
+      } as any;
+      loc = (card as any).resolveLocation({
+        attributes: {},
+        state: 'partial',
+      });
+      expect(loc).toBeNull();
     });
   });
 
-  describe('History API', () => {
+  describe('fetchAndDrawRoute()', () => {
     beforeEach(() => {
       mockHass.states['device_tracker.test'] = {
         attributes: { latitude: 10, longitude: 10 },
@@ -971,6 +987,59 @@ describe('RouteTrackerCard', () => {
           c.updateThemeIcon();
         }
       });
+
+      expect((card as any).map).toBeDefined();
+    });
+
+    it('builds route point with all optional attributes', () => {
+      const state = {
+        attributes: {
+          altitude: 150,
+          battery_level: 85,
+          gps_accuracy: 5,
+          latitude: 10,
+          longitude: 20,
+          source_type: 'gps',
+          speed: 42,
+        },
+        last_updated: '1970-01-01T00:00:00Z',
+      };
+      const point = (RouteTrackerCard as any).buildRoutePoint(state, [10, 20]);
+      expect(point.altitude).toBe(150);
+      expect(point.battery_level).toBe(85);
+      expect(point.gps_accuracy).toBe(5);
+      expect(point.source_type).toBe('gps');
+      expect(point.speed).toBe(42);
+    });
+
+    it('uses default minimal_distance when config omits it', async () => {
+      mockHass.callApi = vi.fn().mockResolvedValue([
+        [
+          {
+            attributes: { latitude: 10.0, longitude: 10.0 },
+            entity_id: 'device_tracker.test',
+            last_updated: '1970-01-01T12:00:00Z',
+          },
+        ],
+      ]);
+      mockHass.states['device_tracker.test'] = {
+        attributes: { latitude: 10.001, longitude: 10.001 },
+        entity_id: 'device_tracker.test',
+        last_updated: '1970-01-01T12:10:00Z',
+        state: 'home',
+      } as any;
+
+      card.setConfig({ entities: [{ entity: 'device_tracker.test' }] });
+      await card.updateComplete;
+
+      (card as any).selectedDevice = 'device_tracker.test';
+      (card as any).selectedDate = '1970-01-01';
+      await card.updateComplete;
+
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      const points = (card as any)._lastPoints;
+      expect(points.length).toBe(2);
     });
   });
 });

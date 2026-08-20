@@ -1,5 +1,19 @@
+export interface RouteTrackerEntityAttributes {
+  altitude?: number;
+  battery_level?: number;
+  device_trackers?: string[];
+  friendly_name?: string;
+  gps_accuracy?: number;
+  latitude?: number;
+  longitude?: number;
+  radius?: number;
+  source_type?: string;
+  speed?: number;
+  [key: string]: unknown;
+}
+
 export interface RouteTrackerEntityState {
-  attributes: Record<string, unknown>;
+  attributes: RouteTrackerEntityAttributes;
 }
 
 export type RouteTrackerStates = Record<string, RouteTrackerEntityState | undefined>;
@@ -28,7 +42,7 @@ export function getSelectedTrackersForPerson(
   personState: RouteTrackerEntityState | undefined,
   states: RouteTrackerStates,
 ): string[] {
-  const deviceTrackers = personState?.attributes?.['device_trackers'];
+  const deviceTrackers = personState?.attributes?.device_trackers;
 
   if (!Array.isArray(deviceTrackers)) {
     return [];

@@ -1,6 +1,6 @@
 import type { HomeAssistant } from 'custom-card-helpers';
 import * as L from 'leaflet';
-import { html, LitElement, type PropertyValues, unsafeCSS } from 'lit';
+import { html, LitElement, type PropertyValues, type TemplateResult, unsafeCSS } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import 'leaflet-polylinedecorator';
 import leafletCss from 'leaflet/dist/leaflet.css?inline';
@@ -17,6 +17,7 @@ import {
   getEligibleRouteEntities,
   getSelectedTrackersForPerson,
   isEligibleRouteEntity,
+  type RouteTrackerEntityAttributes,
   toVirtualSensorId,
 } from './tracker-eligibility.ts';
 import { createResetControl, createThemeControl } from './utils/map-controls.ts';
@@ -28,15 +29,34 @@ interface ConfiguredRouteEntity {
   name?: string;
 }
 
+interface CardConfig {
+  entities?: ConfiguredRouteEntity[];
+  zones?: Array<{ entity: string; name?: string }>;
+  map_provider?: string;
+  theme_mode?: string;
+  minimal_distance?: number;
+  enable_geocoding?: boolean;
+  enable_routing?: boolean;
+  route_origin?: string;
+  routing_provider?: string;
+  [key: string]: unknown;
+}
+
+interface HistoryState {
+  state: string;
+  last_updated: string;
+  attributes: RouteTrackerEntityAttributes;
+}
+
 function isConfiguredRouteEntity(value: unknown): value is ConfiguredRouteEntity {
   if (!value || typeof value !== 'object') {
     return false;
   }
 
-  const entity = value as Record<string, unknown>;
+  const entity = value as { entity?: unknown; name?: unknown };
   return (
-    typeof entity['entity'] === 'string' &&
-    (entity['name'] === undefined || typeof entity['name'] === 'string')
+    typeof entity.entity === 'string' &&
+    (entity.name === undefined || typeof entity.name === 'string')
   );
 }
 
@@ -57,7 +77,7 @@ function getLocalDateString(date: Date, hass?: HomeAssistant): string {
       if (year && month && day) {
         return `${year}-${month}-${day}`;
       }
-    } catch (e) {}
+    } catch {}
   }
 
   const year = date.getFullYear();
@@ -69,18 +89,20 @@ function getLocalDateString(date: Date, hass?: HomeAssistant): string {
 @customElement('route-tracker-card')
 export class RouteTrackerCard extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ type: Object }) public config: any;
+  @property({ type: Object }) public config: CardConfig = {} as CardConfig;
 
   public static async getConfigElement(): Promise<HTMLElement> {
     return document.createElement('route-tracker-card-editor');
   }
 
-  public static getStubConfig(): Record<string, any> {
+  public static getStubConfig(): Record<string, unknown> {
     return { type: 'custom:route-tracker-card' };
   }
 
+  private readonly _cardSize = 8;
+
   public getCardSize(): number {
-    return 8;
+    return this._cardSize;
   }
 
   @state() private selectedDevice: string = '';
@@ -90,7 +112,7 @@ export class RouteTrackerCard extends LitElement {
   @state() private _isSatellite: boolean = false;
   @state() private _currentProvider: string = 'OpenStreetMap DE';
   @state() private _manualTheme?: 'light' | 'dark';
-  private _lastPoints: RoutePoint[] = [];
+  private _lastPoints?: RoutePoint[];
   private _lastIsDark: boolean | null = null;
 
   private map?: L.Map;
@@ -100,7 +122,7 @@ export class RouteTrackerCard extends LitElement {
   private resizeObserver?: ResizeObserver | undefined;
   private routeLayer?: L.LayerGroup;
   private zoneLayer?: L.LayerGroup;
-  private routeBounds: any = null;
+  private routeBounds: L.LatLngBounds | null = null;
 
   static override styles = [
     unsafeCSS(leafletCss),
@@ -112,7 +134,7 @@ export class RouteTrackerCard extends LitElement {
     popupRoutingStyles,
   ];
 
-  public setConfig(config: any): void {
+  public setConfig(config: CardConfig): void {
     if (!config) {
       throw new Error('Invalid configuration');
     }
@@ -156,7 +178,7 @@ export class RouteTrackerCard extends LitElement {
       if (this._lastIsDark !== newIsDark) {
         this._lastIsDark = newIsDark;
         this.updateMapThemeClass();
-        if (this._lastPoints && this._lastPoints.length > 0) {
+        if (this._lastPoints?.length) {
           this.drawRoute(this._lastPoints);
         }
       }
@@ -166,7 +188,7 @@ export class RouteTrackerCard extends LitElement {
       if (this.selectedDevice && this.selectedDate) {
         setTimeout(() => {
           this.map?.invalidateSize();
-          this.fetchAndDrawRoute();
+          void this.fetchAndDrawRoute();
         }, 100);
       }
     }
@@ -191,8 +213,7 @@ export class RouteTrackerCard extends LitElement {
     const isEditMode = ancestors.some((element) => element.classList.contains('edit-mode'));
     const isPanel = ancestors.some(
       (element) =>
-        (element.matches && element.matches('hui-card-options.panel')) ||
-        element.tagName === 'HUI-PANEL-VIEW',
+        element.matches?.('hui-card-options.panel') || element.tagName === 'HUI-PANEL-VIEW',
     );
 
     this.classList.toggle('is-editing-panel', isEditMode && isPanel);
@@ -258,7 +279,7 @@ export class RouteTrackerCard extends LitElement {
 
     this.devices = routeEntities;
     if (!this.devices.some((device) => device.entity_id === this.selectedDevice)) {
-      this.selectedDevice = this.devices[0]?.entity_id || '';
+      this.selectedDevice = this.devices[0]?.entity_id ?? '';
     }
   }
 
@@ -273,7 +294,7 @@ export class RouteTrackerCard extends LitElement {
 
     const lat = this.hass.config.latitude || 0.0;
     const lon = this.hass.config.longitude || 0.0;
-    const currentLang = this.hass?.language || 'en';
+    const currentLang = this.hass.language || 'en';
 
     this.map = L.map(mapContainer, {
       zoomControl: false,
@@ -297,7 +318,7 @@ export class RouteTrackerCard extends LitElement {
 
     const baseMaps = getBaseMaps();
 
-    const providerKey = this.config?.map_provider || 'osm_default';
+    const providerKey = this.config.map_provider ?? 'osm_default';
     let defaultLayer = baseMaps['OpenStreetMap DE'];
     this._currentProvider = 'OpenStreetMap DE';
 
@@ -318,16 +339,16 @@ export class RouteTrackerCard extends LitElement {
       .layers(baseMaps, undefined, { position: 'bottomleft' })
       .addTo(this.map);
     const providerContainer = providerControl.getContainer();
-    if (providerContainer && this.mapContainer && this.mapContainer.parentElement) {
+    if (providerContainer && this.mapContainer?.parentElement) {
       providerContainer.classList.add('provider-selector');
       this.mapContainer.parentElement.appendChild(providerContainer);
     }
 
-    this.map.on('baselayerchange', (e: any) => {
+    this.map.on('baselayerchange', (e) => {
       this._currentProvider = e.name;
       this._isSatellite = e.name === 'Esri Satellite';
       this.updateMapThemeClass();
-      if (this._lastPoints && this._lastPoints.length > 0) {
+      if (this._lastPoints?.length) {
         this.drawRoute(this._lastPoints);
       }
     });
@@ -359,20 +380,22 @@ export class RouteTrackerCard extends LitElement {
 
   private drawZones(): void {
     if (!this.map || !this.zoneLayer) return;
-    this.zoneLayer.clearLayers();
+    const zoneLayer = this.zoneLayer;
+    zoneLayer.clearLayers();
 
-    const zoneEntities = (this.config.zones || []).map((e: any) => ({
+    const zoneEntities = (this.config.zones ?? []).map((e) => ({
       entity_id: e.entity,
       name: e.name || this.hass.states[e.entity]?.attributes?.friendly_name || e.entity,
     }));
 
-    zoneEntities.forEach((z: any) => {
+    zoneEntities.forEach((z) => {
       const state = this.hass.states[z.entity_id];
       if (!state) return;
 
-      const lat = state.attributes?.['latitude'];
-      const lon = state.attributes?.['longitude'];
-      const radius = state.attributes?.['radius'] || 100;
+      const attrs = state.attributes as RouteTrackerEntityAttributes;
+      const lat = attrs.latitude;
+      const lon = attrs.longitude;
+      const radius = attrs.radius ?? 100;
       if (!lat || !lon) return;
 
       L.circle([lat, lon], {
@@ -383,7 +406,7 @@ export class RouteTrackerCard extends LitElement {
         radius,
         weight: 2,
       })
-        .addTo(this.zoneLayer!)
+        .addTo(zoneLayer)
         .bindPopup(`<b>${z.name}</b>`);
 
       L.marker([lat, lon], {
@@ -393,45 +416,48 @@ export class RouteTrackerCard extends LitElement {
           iconAnchor: [0, 0],
           iconSize: [0, 0],
         }),
-      }).addTo(this.zoneLayer!);
+      }).addTo(zoneLayer);
     });
   }
 
-  private resolveLocation(stateObj: any): [number, number] | null {
+  private resolveLocation(
+    stateObj:
+      | { state?: string; attributes?: Record<string, unknown>; last_updated?: string }
+      | undefined,
+  ): [number, number] | null {
     if (!stateObj) return null;
 
-    if (
-      stateObj.attributes &&
-      'latitude' in stateObj.attributes &&
-      'longitude' in stateObj.attributes
-    ) {
-      const lat = parseFloat(stateObj.attributes.latitude);
-      const lon = parseFloat(stateObj.attributes.longitude);
-      if (!isNaN(lat) && !isNaN(lon) && !(lat === 0 && lon === 0)) {
-        return [lat, lon];
-      }
-    }
+    const direct = RouteTrackerCard.tryParseCoordinates(stateObj.attributes);
+    if (direct) return direct;
 
     if (stateObj.state && stateObj.state !== 'not_home' && stateObj.state !== 'unknown') {
       const zoneId = `zone.${stateObj.state.toLowerCase()}`;
       const zoneObj = this.hass.states[zoneId];
-      if (
-        zoneObj &&
-        zoneObj.attributes &&
-        'latitude' in zoneObj.attributes &&
-        'longitude' in zoneObj.attributes
-      ) {
-        const lat = parseFloat(zoneObj.attributes['latitude']);
-        const lon = parseFloat(zoneObj.attributes['longitude']);
-        if (!isNaN(lat) && !isNaN(lon)) {
-          return [lat, lon];
+      if (zoneObj) {
+        const zoneAttrs = zoneObj.attributes as RouteTrackerEntityAttributes;
+        if (zoneAttrs.latitude != null && zoneAttrs.longitude != null) {
+          const lat = parseFloat(String(zoneAttrs.latitude));
+          const lon = parseFloat(String(zoneAttrs.longitude));
+          if (!Number.isNaN(lat) && !Number.isNaN(lon)) {
+            return [lat, lon];
+          }
         }
       }
     }
     return null;
   }
 
-  private async fetchAndDrawRoute() {
+  private static tryParseCoordinates(
+    attributes: RouteTrackerEntityAttributes | undefined,
+  ): [number, number] | null {
+    if (!attributes || !('latitude' in attributes) || !('longitude' in attributes)) return null;
+    const lat = parseFloat(String(attributes.latitude));
+    const lon = parseFloat(String(attributes.longitude));
+    if (Number.isNaN(lat) || Number.isNaN(lon) || (lat === 0 && lon === 0)) return null;
+    return [lat, lon];
+  }
+
+  private async fetchAndDrawRoute(): Promise<void> {
     if (!this.selectedDevice || !this.selectedDate) return;
 
     const start = new Date(this.selectedDate);
@@ -440,118 +466,146 @@ export class RouteTrackerCard extends LitElement {
     end.setHours(23, 59, 59, 999);
 
     try {
-      let sourceIds = [this.selectedDevice];
-      const selectedState = this.hass.states[this.selectedDevice];
-
-      if (this.selectedDevice.startsWith('person.')) {
-        sourceIds = getSelectedTrackersForPerson(selectedState, this.hass.states);
-      }
-
-      const virtualIds = sourceIds
-        .map(toVirtualSensorId)
-        .filter((id) => id && this.hass.states[id] !== undefined);
-      const queryIds = virtualIds.length > 0 ? virtualIds : sourceIds;
-
-      const startStr = start.toISOString();
-      const endStr = end.toISOString();
-      const entityIdsStr = queryIds.join(',');
-
-      const result = await this.hass.callApi<any[][]>(
-        'GET',
-        `history/period/${startStr}?end_time=${endStr}&filter_entity_id=${entityIdsStr}&significant_changes_only=0`,
-      );
-
-      let allHistory: any[] = [];
-      if (Array.isArray(result)) {
-        result.forEach((entityHistory) => {
-          if (Array.isArray(entityHistory)) {
-            allHistory = allHistory.concat(entityHistory);
-          }
-        });
-      }
-
-      allHistory.sort(
-        (a, b) => new Date(a.last_updated).getTime() - new Date(b.last_updated).getTime(),
-      );
-
-      const points: RoutePoint[] = [];
-      let lastLoc: [number, number] | null = null;
-      const minDistance =
-        this.config.minimal_distance !== undefined ? this.config.minimal_distance : 0.05;
-
-      allHistory.forEach((state: any) => {
-        const loc = this.resolveLocation(state);
-        if (loc) {
-          const timeStr = new Date(state.last_updated).toLocaleString();
-          const point: RoutePoint = {
-            altitude: state.attributes?.['altitude'],
-            battery_level: state.attributes?.['battery_level'],
-            gps_accuracy: state.attributes?.['gps_accuracy'],
-            loc: L.latLng(loc[0], loc[1]),
-            source_type: state.attributes?.['source_type'],
-            speed: state.attributes?.['speed'],
-            timestamp: timeStr,
-          };
-          if (!lastLoc) {
-            points.push(point);
-            lastLoc = loc;
-          } else {
-            const dist = calculateDistance(lastLoc[0], lastLoc[1], loc[0], loc[1]);
-
-            if (dist > minDistance) {
-              points.push(point);
-              lastLoc = loc;
-            }
-          }
-        }
-      });
-
-      const virtualSensorId = toVirtualSensorId(this.selectedDevice);
-      let currentState = this.hass.states[this.selectedDevice];
-
-      if (virtualSensorId && this.hass.states[virtualSensorId]) {
-        currentState = this.hass.states[virtualSensorId];
-      } else if (this.selectedDevice.startsWith('person.')) {
-        const firstQueryId = queryIds[0];
-        if (firstQueryId && firstQueryId.startsWith('sensor.virtual_device_tracker_')) {
-          currentState = this.hass.states[firstQueryId];
-        }
-      }
-
-      const currentLoc = this.resolveLocation(currentState);
-      if (currentState && currentLoc) {
-        const timeStr = new Date(currentState.last_updated).toLocaleString();
-        const point: RoutePoint = {
-          altitude: currentState.attributes?.['altitude'],
-          battery_level: currentState.attributes?.['battery_level'],
-          gps_accuracy: currentState.attributes?.['gps_accuracy'],
-          loc: L.latLng(currentLoc[0], currentLoc[1]),
-          source_type: currentState.attributes?.['source_type'],
-          speed: currentState.attributes?.['speed'],
-          timestamp: timeStr,
-        };
-        if (!lastLoc) {
-          points.push(point);
-        } else {
-          const dist = calculateDistance(lastLoc[0], lastLoc[1], currentLoc[0], currentLoc[1]);
-          if (dist > minDistance) {
-            points.push(point);
-          }
-        }
-      }
+      const queryIds = this.resolveQueryIds();
+      const allHistory = await this.fetchHistory(start, end, queryIds);
+      const points = this.buildRoutePoints(allHistory);
+      const currentState = this.resolveCurrentState(queryIds);
+      this.appendCurrentPoint(points, currentState);
 
       this.drawRoute(points);
     } catch {}
   }
 
-  private drawRoute(points: RoutePoint[]) {
+  private resolveQueryIds(): string[] {
+    let sourceIds = [this.selectedDevice];
+
+    if (this.selectedDevice.startsWith('person.')) {
+      const selectedState = this.hass.states[this.selectedDevice];
+      sourceIds = getSelectedTrackersForPerson(selectedState, this.hass.states);
+    }
+
+    const virtualIds = sourceIds
+      .map(toVirtualSensorId)
+      .filter((id) => id && this.hass.states[id] !== undefined);
+    return virtualIds.length > 0 ? virtualIds : sourceIds;
+  }
+
+  private async fetchHistory(start: Date, end: Date, queryIds: string[]): Promise<HistoryState[]> {
+    const startStr = start.toISOString();
+    const endStr = end.toISOString();
+    const entityIdsStr = queryIds.join(',');
+
+    const result = await this.hass.callApi<HistoryState[][]>(
+      'GET',
+      `history/period/${startStr}?end_time=${endStr}&filter_entity_id=${entityIdsStr}&significant_changes_only=0`,
+    );
+
+    const allHistory: HistoryState[] = [];
+    if (Array.isArray(result)) {
+      for (const entityHistory of result) {
+        if (Array.isArray(entityHistory)) {
+          allHistory.push(...entityHistory);
+        }
+      }
+    }
+
+    allHistory.sort(
+      (a, b) => new Date(a.last_updated).getTime() - new Date(b.last_updated).getTime(),
+    );
+    return allHistory;
+  }
+
+  private buildRoutePoints(allHistory: HistoryState[]): RoutePoint[] {
+    const points: RoutePoint[] = [];
+    let lastLoc: [number, number] | null = null;
+    const minDistance = this.config.minimal_distance ?? 0.05;
+
+    for (const state of allHistory) {
+      const loc = this.resolveLocation(state);
+      if (!loc) continue;
+
+      const point = RouteTrackerCard.buildRoutePoint(state, loc);
+      if (!lastLoc) {
+        points.push(point);
+        lastLoc = loc;
+        continue;
+      }
+
+      const dist = calculateDistance(lastLoc[0], lastLoc[1], loc[0], loc[1]);
+      if (dist > minDistance) {
+        points.push(point);
+        lastLoc = loc;
+      }
+    }
+
+    return points;
+  }
+
+  private static formatTimestamp(isoString: string): string {
+    const date = new Date(isoString);
+    return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+  }
+
+  private static buildRoutePoint(state: HistoryState, loc: [number, number]): RoutePoint {
+    const attrs = state.attributes;
+    const point: RoutePoint = {
+      loc: L.latLng(loc[0], loc[1]),
+      timestamp: RouteTrackerCard.formatTimestamp(state.last_updated),
+    };
+    if (attrs.altitude !== undefined) point.altitude = attrs.altitude;
+    if (attrs.battery_level !== undefined) point.battery_level = attrs.battery_level;
+    if (attrs.gps_accuracy !== undefined) point.gps_accuracy = attrs.gps_accuracy;
+    if (attrs.source_type !== undefined) point.source_type = attrs.source_type;
+    if (attrs.speed !== undefined) point.speed = attrs.speed;
+    return point;
+  }
+
+  private resolveCurrentState(queryIds: string[]): HistoryState | undefined {
+    const virtualSensorId = toVirtualSensorId(this.selectedDevice);
+    const currentState = this.hass.states[this.selectedDevice];
+
+    if (virtualSensorId && this.hass.states[virtualSensorId]) {
+      return this.hass.states[virtualSensorId] as unknown as HistoryState;
+    }
+
+    if (this.selectedDevice.startsWith('person.')) {
+      const firstQueryId = queryIds[0];
+      if (firstQueryId?.startsWith('sensor.virtual_device_tracker_')) {
+        return this.hass.states[firstQueryId] as unknown as HistoryState;
+      }
+    }
+
+    return currentState as unknown as HistoryState;
+  }
+
+  private appendCurrentPoint(points: RoutePoint[], currentState: HistoryState | undefined): void {
+    if (!currentState) return;
+    const currentLoc = this.resolveLocation(currentState);
+    if (!currentLoc) return;
+
+    const point = RouteTrackerCard.buildRoutePoint(currentState, currentLoc);
+    const lastPoint = points[points.length - 1];
+    const lastLoc = lastPoint?.loc ?? null;
+    if (!lastLoc) {
+      points.push(point);
+      return;
+    }
+
+    const minDistance = this.config.minimal_distance ?? 0.05;
+    const dist = calculateDistance(lastLoc.lat, lastLoc.lng, currentLoc[0], currentLoc[1]);
+    if (dist > minDistance) {
+      points.push(point);
+    }
+  }
+
+  private drawRoute(points: RoutePoint[]): void {
     this._lastPoints = points;
     if (!this.map || !this.routeLayer) return;
 
     const bounds = drawRouteOnMap({
       currentProvider: this._currentProvider,
-      enableGeocoding: this.config?.enable_geocoding || false,
-      enableRouting: this.config?.enable_routing || false,
+      enableGeocoding: this.config.enable_geocoding ?? false,
+      enableRouting: this.config.enable_routing ?? false,
       fallbackLat: this.hass.config.latitude || 0.0,
       fallbackLon: this.hass.config.longitude || 0.0,
       hass: this.hass,
@@ -562,8 +616,8 @@ export class RouteTrackerCard extends LitElement {
       map: this.map,
       points,
       routeLayer: this.routeLayer,
-      routeOrigin: this.config?.route_origin || 'device',
-      routingProvider: this.config?.routing_provider || 'osm',
+      routeOrigin: this.config.route_origin ?? 'device',
+      routingProvider: this.config.routing_provider ?? 'osm',
     });
 
     if (bounds) {
@@ -571,11 +625,11 @@ export class RouteTrackerCard extends LitElement {
     }
   }
 
-  private handleDeviceChange(e: Event) {
+  private handleDeviceChange(e: Event): void {
     this.selectedDevice = (e.target as HTMLSelectElement).value;
   }
 
-  private handleDateChange(e: Event) {
+  private handleDateChange(e: Event): void {
     this.selectedDate = (e.target as HTMLInputElement).value;
   }
 
@@ -589,10 +643,10 @@ export class RouteTrackerCard extends LitElement {
 
   private get isDarkMode(): boolean {
     if (this._manualTheme !== undefined) return this._manualTheme === 'dark';
-    const themeMode = this.config?.theme_mode || 'auto';
+    const themeMode = this.config.theme_mode ?? 'auto';
     if (themeMode === 'dark') return true;
     if (themeMode === 'light') return false;
-    return (this.hass.themes as any).darkMode;
+    return Boolean((this.hass.themes as { darkMode?: boolean }).darkMode);
   }
 
   private updateMapThemeClass(): void {
@@ -613,8 +667,8 @@ export class RouteTrackerCard extends LitElement {
       }
     }
     const controls = this.mapContainer.querySelectorAll('.leaflet-control');
-    controls.forEach((c: any) => {
-      if (typeof c.updateThemeIcon === 'function') {
+    controls.forEach((c) => {
+      if ('updateThemeIcon' in c && typeof c.updateThemeIcon === 'function') {
         c.updateThemeIcon();
       }
     });
@@ -623,13 +677,13 @@ export class RouteTrackerCard extends LitElement {
   private toggleManualTheme(): void {
     this._manualTheme = this.isDarkMode ? 'light' : 'dark';
     this.updateMapThemeClass();
-    if (this._lastPoints && this._lastPoints.length > 0) {
+    if (this._lastPoints?.length) {
       this.drawRoute(this._lastPoints);
     }
   }
 
-  protected override render() {
-    const lang = this.hass?.language || 'en';
+  protected override render(): TemplateResult {
+    const lang = this.hass.language || 'en';
     const controlPanelClass = this.controlsOpen ? 'control-panel is-open' : 'control-panel';
 
     return html`
@@ -685,8 +739,12 @@ export class RouteTrackerCard extends LitElement {
   }
 }
 
-(window as any).customCards = (window as any).customCards || [];
-(window as any).customCards.push({
+interface WindowWithCustomCards extends Window {
+  customCards?: Array<{ description: string; name: string; type: string }>;
+}
+
+(window as WindowWithCustomCards).customCards = (window as WindowWithCustomCards).customCards ?? [];
+(window as WindowWithCustomCards).customCards?.push({
   description: 'Track device routes on a map',
   name: 'Route Tracker',
   type: 'route-tracker-card',

@@ -19,7 +19,7 @@ const states: RouteTrackerStates = {
   },
 };
 
-describe('TrackerEligibility', () => {
+describe('getRouteEntityEligibility()', () => {
   it('derives the virtual sensor entity ID from a device tracker via toVirtualSensorId()', () => {
     expect(toVirtualSensorId('device_tracker.phone')).toBe('sensor.virtual_device_tracker_phone');
     expect(toVirtualSensorId('person.c')).toBe('sensor.virtual_device_tracker_c');

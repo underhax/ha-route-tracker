@@ -7,7 +7,7 @@ import {
   type RoutePoint,
 } from './route-drawer.ts';
 
-describe('RouteDrawer', () => {
+describe('drawRouteOnMap()', () => {
   describe('calculateDistance()', () => {
     it('calculates distance correctly for known points', () => {
       const d = calculateDistance(0, 0, 1, 1);
@@ -78,11 +78,8 @@ describe('RouteDrawer', () => {
       expect(result).toBeUndefined();
       expect(setViewSpy).toHaveBeenCalledWith([10, 20], 19);
 
-      const resultNull = drawRouteOnMap({ ...baseOptions, points: null as any });
-      expect(resultNull).toBeUndefined();
-
-      const resultUndefined = drawRouteOnMap({ ...baseOptions, points: undefined as any });
-      expect(resultUndefined).toBeUndefined();
+      const resultEmpty = drawRouteOnMap({ ...baseOptions, points: [] });
+      expect(resultEmpty).toBeUndefined();
     });
 
     it('draws a single route point', () => {
@@ -151,6 +148,14 @@ describe('RouteDrawer', () => {
       ];
       delete (window as any).L.polylineDecorator;
 
+      expect(() => {
+        drawRouteOnMap({ ...baseOptions, points });
+      }).not.toThrow();
+    });
+
+    it('handles undefined points in sparse array', () => {
+      const points = new Array(2) as unknown as RoutePoint[];
+      points[1] = { loc: L.latLng(1, 1), timestamp: 'end' };
       expect(() => {
         drawRouteOnMap({ ...baseOptions, points });
       }).not.toThrow();

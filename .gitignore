@@ -14,16 +14,16 @@ htmlcov/
 .hypothesis/
 .mypy_cache/
 .ruff_cache/
+.uv-cache/
 .basedpyright/
 .pyright/
 
-frontend/node_modules/
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
 custom_components/route_tracker/www/
-release/
 
 *.md
 !README.md

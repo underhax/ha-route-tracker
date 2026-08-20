@@ -22,7 +22,7 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!dist", "!coverage", "!node_modules"]
+    "includes": ["frontend/**", "!dist", "!coverage", "!node_modules"]
   },
   "formatter": {
     "enabled": true,

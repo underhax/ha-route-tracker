@@ -2,6 +2,19 @@ import * as L from 'leaflet';
 import { markerSvg } from '../icons/marker.ts';
 import { buildPopupContent } from './popup-builder.ts';
 
+interface LeafletSymbol {
+  arrowHead: (opts: Record<string, unknown>) => unknown;
+}
+
+interface LeafletGlobal {
+  polylineDecorator?: (polyline: L.Polyline, options: Record<string, unknown>) => L.Layer;
+  Symbol: LeafletSymbol;
+}
+
+interface WindowWithLeaflet {
+  L?: LeafletGlobal;
+}
+
 export interface RoutePoint {
   loc: L.LatLng;
   timestamp: string;
@@ -26,6 +39,14 @@ export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2
   return R * c;
 }
 
+export interface HassForPopup {
+  config?: { unit_system?: { length?: string } };
+  states?: Record<
+    string,
+    { attributes?: { latitude?: string; longitude?: string; friendly_name?: string } }
+  >;
+}
+
 export interface DrawRouteOptions {
   points: RoutePoint[];
   map: L.Map;
@@ -41,7 +62,62 @@ export interface DrawRouteOptions {
   enableGeocoding: boolean;
   enableRouting: boolean;
   routeOrigin: string;
-  hass: any;
+  hass: HassForPopup;
+}
+
+interface RouteColorPalette {
+  routeColor: string;
+  routeOpacity: number;
+  arrowColor: string;
+  beadBorderColor: string;
+  beadFillColor: string;
+}
+
+function resolveRouteColors(
+  isSatellite: boolean,
+  isDarkMode: boolean,
+  currentProvider: string,
+): RouteColorPalette {
+  const isDark = isDarkMode && !isSatellite;
+  const isCartoDark = isDark && currentProvider === 'CartoDB Voyager';
+
+  if (isSatellite) {
+    return {
+      arrowColor: '#b8c9cc',
+      beadBorderColor: '#d1ebf7',
+      beadFillColor: '#5db4cb',
+      routeColor: '#00CCE6',
+      routeOpacity: 0.4,
+    };
+  }
+
+  if (isCartoDark) {
+    return {
+      arrowColor: '#79abb3',
+      beadBorderColor: '#b2d2d5',
+      beadFillColor: '#41838c',
+      routeColor: '#45949c',
+      routeOpacity: 0.9,
+    };
+  }
+
+  if (isDark) {
+    return {
+      arrowColor: '#0D4F58',
+      beadBorderColor: '#01252a',
+      beadFillColor: '#45929c',
+      routeColor: '#167A87',
+      routeOpacity: 0.9,
+    };
+  }
+
+  return {
+    arrowColor: '#009fb9',
+    beadBorderColor: '#d1ebf7',
+    beadFillColor: '#5db4cb',
+    routeColor: '#00CCE6',
+    routeOpacity: 0.5,
+  };
 }
 
 export function drawRouteOnMap(options: DrawRouteOptions): L.LatLngBounds | undefined {
@@ -65,72 +141,95 @@ export function drawRouteOnMap(options: DrawRouteOptions): L.LatLngBounds | unde
 
   routeLayer.clearLayers();
 
-  if (!points || !Array.isArray(points) || points.length === 0) {
+  if (points.length === 0) {
     map.setView([fallbackLat, fallbackLon], 19);
     return undefined;
   }
 
-  const isDark = isDarkMode && !isSatellite;
-  const isCartoDark = isDark && currentProvider === 'CartoDB Voyager';
-
-  const routeColor = isSatellite
-    ? '#00CCE6'
-    : isCartoDark
-      ? '#45949c'
-      : isDark
-        ? '#167A87'
-        : '#00CCE6';
-  const routeOpacity = isSatellite ? 0.4 : isCartoDark ? 0.9 : isDark ? 0.9 : 0.5;
-  const arrowColor = isSatellite
-    ? '#b8c9cc'
-    : isCartoDark
-      ? '#79abb3'
-      : isDark
-        ? '#0D4F58'
-        : '#009fb9';
-  const beadBorderColor = isSatellite
-    ? '#d1ebf7'
-    : isCartoDark
-      ? '#b2d2d5'
-      : isDark
-        ? '#01252a'
-        : '#d1ebf7';
-  const beadFillColor = isSatellite
-    ? '#5db4cb'
-    : isCartoDark
-      ? '#41838c'
-      : isDark
-        ? '#45929c'
-        : '#5db4cb';
+  const colors = resolveRouteColors(isSatellite, isDarkMode, currentProvider);
 
   if (points.length > 1) {
-    const polyline = L.polyline(
-      points.map((p) => p.loc),
-      {
-        color: routeColor,
-        opacity: routeOpacity,
-        weight: 6,
-      },
-    ).addTo(routeLayer);
+    drawPolyline(points, routeLayer, colors);
+  }
 
-    if ((window as any).L.polylineDecorator) {
-      (window as any).L.polylineDecorator(polyline, {
+  drawRouteMarkers(
+    points,
+    routeLayer,
+    colors,
+    language,
+    localize,
+    routingProvider,
+    enableGeocoding,
+    enableRouting,
+    routeOrigin,
+    hass,
+  );
+
+  const routeBounds = L.latLngBounds(points.map((p) => p.loc));
+  map.fitBounds(routeBounds);
+  return routeBounds;
+}
+
+function drawPolyline(
+  points: RoutePoint[],
+  routeLayer: L.LayerGroup,
+  colors: RouteColorPalette,
+): void {
+  const polyline = L.polyline(
+    points.map((p) => p.loc),
+    {
+      color: colors.routeColor,
+      opacity: colors.routeOpacity,
+      weight: 6,
+    },
+  ).addTo(routeLayer);
+
+  const leafletGlobal = (window as unknown as WindowWithLeaflet).L;
+  if (leafletGlobal?.polylineDecorator) {
+    leafletGlobal
+      .polylineDecorator(polyline, {
         patterns: [
           {
             offset: 50,
             repeat: 150,
-            symbol: (window as any).L.Symbol.arrowHead({
-              pathOptions: { color: arrowColor, stroke: true, weight: 2 },
+            symbol: leafletGlobal.Symbol.arrowHead({
+              pathOptions: { color: colors.arrowColor, stroke: true, weight: 2 },
               pixelSize: 8,
               polygon: false,
             }),
           },
         ],
-      }).addTo(routeLayer);
-    }
+      })
+      .addTo(routeLayer);
   }
+}
 
-  points.forEach((point, index) => {
+function drawRouteMarkers(
+  points: RoutePoint[],
+  routeLayer: L.LayerGroup,
+  colors: RouteColorPalette,
+  language: string,
+  localize: (key: string, lang: string) => string,
+  routingProvider: string,
+  enableGeocoding: boolean,
+  enableRouting: boolean,
+  routeOrigin: string,
+  hass: HassForPopup,
+): void {
+  for (let index = 0; index < points.length; index++) {
+    const point = points[index];
+    if (!point) return;
+    const popup = buildPopupContent(
+      point,
+      language,
+      localize,
+      routingProvider,
+      enableGeocoding,
+      enableRouting,
+      routeOrigin,
+      hass,
+    );
+
     if (index === points.length - 1) {
       const currentIcon = L.divIcon({
         className: '',
@@ -139,20 +238,7 @@ export function drawRouteOnMap(options: DrawRouteOptions): L.LatLngBounds | unde
         iconSize: [24, 36],
         popupAnchor: [0, -36],
       });
-      L.marker(point.loc, { icon: currentIcon })
-        .addTo(routeLayer)
-        .bindPopup(
-          buildPopupContent(
-            point,
-            language,
-            localize,
-            routingProvider,
-            enableGeocoding,
-            enableRouting,
-            routeOrigin,
-            hass,
-          ),
-        );
+      L.marker(point.loc, { icon: currentIcon }).addTo(routeLayer).bindPopup(popup);
     } else if (index === 0) {
       L.circleMarker(point.loc, {
         color: '#4caf50',
@@ -161,18 +247,7 @@ export function drawRouteOnMap(options: DrawRouteOptions): L.LatLngBounds | unde
         radius: 6,
       })
         .addTo(routeLayer)
-        .bindPopup(
-          buildPopupContent(
-            point,
-            language,
-            localize,
-            routingProvider,
-            enableGeocoding,
-            enableRouting,
-            routeOrigin,
-            hass,
-          ),
-        );
+        .bindPopup(popup);
     } else {
       const hitArea = L.circleMarker(point.loc, {
         color: 'transparent',
@@ -183,35 +258,20 @@ export function drawRouteOnMap(options: DrawRouteOptions): L.LatLngBounds | unde
         weight: 0,
       })
         .addTo(routeLayer)
-        .bindPopup(
-          buildPopupContent(
-            point,
-            language,
-            localize,
-            routingProvider,
-            enableGeocoding,
-            enableRouting,
-            routeOrigin,
-            hass,
-          ),
-        );
+        .bindPopup(popup);
 
       L.circleMarker(point.loc, {
-        color: beadBorderColor,
-        fillColor: beadFillColor,
+        color: colors.beadBorderColor,
+        fillColor: colors.beadFillColor,
         fillOpacity: 1,
         interactive: false,
         radius: 3,
         weight: 1.5,
       }).addTo(routeLayer);
 
-      hitArea.on('click', () => {
+      hitArea.on('click', (): void => {
         hitArea.openPopup();
       });
     }
-  });
-
-  const routeBounds = L.latLngBounds(points.map((p) => p.loc));
-  map.fitBounds(routeBounds);
-  return routeBounds;
+  }
 }

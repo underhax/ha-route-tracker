@@ -42,7 +42,7 @@ describe('RouteTrackerCardEditor', () => {
   });
 
   afterEach(() => {
-    if (container && container.parentNode) {
+    if (container?.parentNode) {
       container.parentNode.removeChild(container);
     }
   });
@@ -72,8 +72,13 @@ describe('RouteTrackerCardEditor', () => {
 
     const selects = root?.querySelectorAll('select');
     expect(selects?.length).toBeGreaterThan(1);
-    expect((selects![0] as HTMLSelectElement).value).toBe('osm_default');
-    expect((selects![1] as HTMLSelectElement).value).toBe('auto');
+    const selectsNonNull = selects as NodeListOf<HTMLSelectElement>;
+    const firstSelect = selectsNonNull[0];
+    expect(firstSelect).toBeDefined();
+    expect((firstSelect as HTMLSelectElement).value).toBe('osm_default');
+    const secondSelect = selectsNonNull[1];
+    expect(secondSelect).toBeDefined();
+    expect((secondSelect as HTMLSelectElement).value).toBe('auto');
   });
 
   it('fires config-changed when map_provider changes', async () => {
@@ -161,10 +166,12 @@ describe('RouteTrackerCardEditor', () => {
     const addButtons = editor.shadowRoot?.querySelectorAll('.btn-add');
     expect(addButtons?.length).toBeGreaterThan(0);
 
-    (addButtons![0] as HTMLButtonElement).click();
+    const addBtn = (addButtons as NodeListOf<HTMLButtonElement>)[0];
+    expect(addBtn).toBeDefined();
+    (addBtn as HTMLButtonElement).click();
 
-    expect(firedConfig?.entities?.length).toBe(1);
-    expect(firedConfig?.entities?.[0]).toEqual({ entity: '', name: '' });
+    expect(firedConfig.entities?.length).toBe(1);
+    expect(firedConfig.entities?.[0]).toEqual({ entity: '', name: '' });
   });
 
   it('updates an entity and name', async () => {
@@ -185,14 +192,18 @@ describe('RouteTrackerCardEditor', () => {
     expect(picker).not.toBeNull();
     picker?.dispatchEvent(new CustomEvent('value-changed', { detail: { value: 'person.new' } }));
 
-    expect(firedConfig.entities?.[0]!.entity).toBe('person.new');
+    expect(((firedConfig.entities as RouteEntityConfig[])[0] as RouteEntityConfig).entity).toBe(
+      'person.new',
+    );
 
     const nameInput = editor.shadowRoot?.querySelector('input[type="text"]') as HTMLInputElement;
     expect(nameInput).not.toBeNull();
     nameInput.value = 'New Name';
     nameInput.dispatchEvent(new Event('input'));
 
-    expect(firedConfig.entities?.[0]!.name).toBe('New Name');
+    expect(((firedConfig.entities as RouteEntityConfig[])[0] as RouteEntityConfig).name).toBe(
+      'New Name',
+    );
   });
 
   it('removes an entity', async () => {
@@ -213,7 +224,7 @@ describe('RouteTrackerCardEditor', () => {
     expect(removeBtn).not.toBeNull();
     removeBtn.click();
 
-    expect(firedConfig?.entities?.length).toBe(0);
+    expect(firedConfig.entities?.length).toBe(0);
   });
 
   it('handles drag and drop operations', async () => {
@@ -236,13 +247,16 @@ describe('RouteTrackerCardEditor', () => {
     const rows = editor.shadowRoot?.querySelectorAll('.entity-row');
     expect(rows?.length).toBe(2);
 
-    const row0 = rows![0] as HTMLElement;
-    const row1 = rows![1] as HTMLElement;
+    const rowArr = rows as NodeListOf<HTMLElement>;
+    const row0 = rowArr[0];
+    const row1 = rowArr[1];
+    expect(row0).toBeDefined();
+    expect(row1).toBeDefined();
 
     const dragStartEvent = new Event('dragstart') as Event;
     Object.defineProperty(dragStartEvent, 'dataTransfer', { value: { effectAllowed: '' } });
-    row0.dispatchEvent(dragStartEvent);
-    expect(row0.classList.contains('dragging')).toBe(true);
+    (row0 as HTMLElement).dispatchEvent(dragStartEvent);
+    expect((row0 as HTMLElement).classList.contains('dragging')).toBe(true);
     expect(
       (dragStartEvent as unknown as { dataTransfer: { effectAllowed: string } }).dataTransfer
         .effectAllowed,
@@ -250,28 +264,28 @@ describe('RouteTrackerCardEditor', () => {
 
     const dragOverEvent = new Event('dragover') as Event;
     Object.defineProperty(dragOverEvent, 'dataTransfer', { value: { dropEffect: '' } });
-    row1.dispatchEvent(dragOverEvent);
-    expect(row1.classList.contains('drag-over')).toBe(true);
+    (row1 as HTMLElement).dispatchEvent(dragOverEvent);
+    expect((row1 as HTMLElement).classList.contains('drag-over')).toBe(true);
 
     const dragLeaveEvent = new Event('dragleave');
-    row1.dispatchEvent(dragLeaveEvent);
-    expect(row1.classList.contains('drag-over')).toBe(false);
+    (row1 as HTMLElement).dispatchEvent(dragLeaveEvent);
+    expect((row1 as HTMLElement).classList.contains('drag-over')).toBe(false);
 
-    row1.dispatchEvent(dragOverEvent);
+    (row1 as HTMLElement).dispatchEvent(dragOverEvent);
 
     const dropEvent = new Event('drop');
-    row1.dispatchEvent(dropEvent);
-    expect(row1.classList.contains('drag-over')).toBe(false);
+    (row1 as HTMLElement).dispatchEvent(dropEvent);
+    expect((row1 as HTMLElement).classList.contains('drag-over')).toBe(false);
     expect(firedConfig.entities?.length).toBe(2);
-    expect(firedConfig.entities?.[0]!.entity).toBe('person.2');
-    expect(firedConfig.entities?.[1]!.entity).toBe('person.1');
+    expect((firedConfig.entities as RouteEntityConfig[])[0]?.entity).toBe('person.2');
+    expect((firedConfig.entities as RouteEntityConfig[])[1]?.entity).toBe('person.1');
 
     const dragEndEvent = new Event('dragend');
-    row0.dispatchEvent(dragEndEvent);
-    expect(row0.classList.contains('dragging')).toBe(false);
+    (row0 as HTMLElement).dispatchEvent(dragEndEvent);
+    expect((row0 as HTMLElement).classList.contains('dragging')).toBe(false);
 
     const dropEvent2 = new Event('drop');
-    row0.dispatchEvent(dropEvent2);
+    (row0 as HTMLElement).dispatchEvent(dropEvent2);
   });
 
   it('filters entities correctly', async () => {
@@ -405,10 +419,11 @@ describe('RouteTrackerCardEditor', () => {
 
     const checkboxes = editor.shadowRoot?.querySelectorAll('input[type="checkbox"]');
     expect(checkboxes?.length).toBeGreaterThan(0);
-    const geocodingCheckbox = checkboxes![0] as HTMLInputElement;
+    const geocodingCheckbox = (checkboxes as NodeListOf<HTMLInputElement>)[0];
+    expect(geocodingCheckbox).toBeDefined();
 
-    geocodingCheckbox.checked = true;
-    geocodingCheckbox.dispatchEvent(new Event('change'));
+    (geocodingCheckbox as HTMLInputElement).checked = true;
+    (geocodingCheckbox as HTMLInputElement).dispatchEvent(new Event('change'));
 
     expect((firedConfig as any).enable_geocoding).toBe(true);
   });
@@ -424,10 +439,11 @@ describe('RouteTrackerCardEditor', () => {
 
     const checkboxes = editor.shadowRoot?.querySelectorAll('input[type="checkbox"]');
     expect(checkboxes?.length).toBeGreaterThan(1);
-    const routingCheckbox = checkboxes![1] as HTMLInputElement;
+    const routingCheckbox = (checkboxes as NodeListOf<HTMLInputElement>)[1];
+    expect(routingCheckbox).toBeDefined();
 
-    routingCheckbox.checked = true;
-    routingCheckbox.dispatchEvent(new Event('change'));
+    (routingCheckbox as HTMLInputElement).checked = true;
+    (routingCheckbox as HTMLInputElement).dispatchEvent(new Event('change'));
 
     expect((firedConfig as any).enable_routing).toBe(true);
   });
@@ -445,10 +461,11 @@ describe('RouteTrackerCardEditor', () => {
     });
 
     const selects = editor.shadowRoot?.querySelectorAll('select');
-    const originSelect = selects![2] as HTMLSelectElement;
+    const originSelect = (selects as NodeListOf<HTMLSelectElement>)[2];
+    expect(originSelect).toBeDefined();
 
-    originSelect.value = 'zone.home';
-    originSelect.dispatchEvent(new Event('change'));
+    (originSelect as HTMLSelectElement).value = 'zone.home';
+    (originSelect as HTMLSelectElement).dispatchEvent(new Event('change'));
 
     expect((firedConfig as any).route_origin).toBe('zone.home');
   });
@@ -463,10 +480,11 @@ describe('RouteTrackerCardEditor', () => {
     });
 
     const selects = editor.shadowRoot?.querySelectorAll('select');
-    const providerSelect = selects![3] as HTMLSelectElement;
+    const providerSelect = (selects as NodeListOf<HTMLSelectElement>)[3];
+    expect(providerSelect).toBeDefined();
 
-    providerSelect.value = 'google';
-    providerSelect.dispatchEvent(new Event('change'));
+    (providerSelect as HTMLSelectElement).value = 'google';
+    (providerSelect as HTMLSelectElement).dispatchEvent(new Event('change'));
 
     expect((firedConfig as any).routing_provider).toBe('google');
   });
@@ -479,9 +497,10 @@ describe('RouteTrackerCardEditor', () => {
     await editor.updateComplete;
 
     const selects = editor.shadowRoot?.querySelectorAll('select');
-    const originSelect = selects![2] as HTMLSelectElement;
+    const originSelect2 = (selects as NodeListOf<HTMLSelectElement>)[2];
+    expect(originSelect2).toBeDefined();
 
-    const options = originSelect.querySelectorAll('option');
+    const options = (originSelect2 as HTMLSelectElement).querySelectorAll('option');
     const noNameOption = Array.from(options).find((opt) => opt.value === 'zone.no_name');
     expect(noNameOption?.textContent?.trim()).toBe('zone.no_name');
 
@@ -489,5 +508,51 @@ describe('RouteTrackerCardEditor', () => {
       '.routing-provider-info a',
     ) as HTMLAnchorElement;
     expect(providerLink.href).toContain('openstreetmap');
+  });
+
+  it('renders entity with undefined name using fallback', async () => {
+    editor.setConfig({
+      entities: [{ entity: 'person.noname' } as unknown as RouteEntityConfig],
+      map_provider: 'osm_default',
+      theme_mode: 'auto',
+      zones: [],
+    });
+    await editor.updateComplete;
+
+    const nameInput = editor.shadowRoot?.querySelector('input[type="text"]') as HTMLInputElement;
+    expect(nameInput).not.toBeNull();
+    expect(nameInput.value).toBe('');
+  });
+
+  it('covers drag methods when shadowRoot is null', () => {
+    const unconnected = document.createElement(
+      'route-tracker-card-editor',
+    ) as RouteTrackerCardEditor;
+    const methods = unconnected as unknown as {
+      _onDragEnd: (e: DragEvent) => void;
+      _onDragOver: (e: DragEvent) => void;
+      _onDragLeave: (e: DragEvent) => void;
+      _onDrop: (targetIndex: number, section: 'entities' | 'zones', e: DragEvent) => void;
+      _onDragStart: (index: number, section: 'entities' | 'zones', e: DragEvent) => void;
+    };
+
+    const dummy = document.createElement('div');
+    const preventDefault = (): void => {};
+
+    methods._onDragStart(0, 'entities', {
+      dataTransfer: { effectAllowed: '' },
+      target: dummy,
+    } as unknown as DragEvent);
+    methods._onDragOver({ preventDefault, target: dummy } as unknown as DragEvent);
+    methods._onDragEnd({ target: dummy } as unknown as DragEvent);
+    methods._onDragLeave({ target: dummy } as unknown as DragEvent);
+    methods._onDrop(0, 'entities', { preventDefault, target: dummy } as unknown as DragEvent);
+    expect(unconnected.shadowRoot).toBeNull();
+  });
+
+  it('covers _trackerFilter method', () => {
+    const filter = (editor as unknown as { _trackerFilter: (s: { entity_id: string }) => boolean })
+      ._trackerFilter;
+    expect(filter.call(editor, { entity_id: 'person.test' })).toBe(false);
   });
 });

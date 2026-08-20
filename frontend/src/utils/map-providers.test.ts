@@ -7,7 +7,7 @@ vi.mock('leaflet', () => {
   };
 });
 
-describe('MapProviders', () => {
+describe('getBaseMaps()', () => {
   it('returns defined base map configurations', () => {
     const maps = getBaseMaps();
     expect(Object.keys(maps).length).toBeGreaterThan(0);

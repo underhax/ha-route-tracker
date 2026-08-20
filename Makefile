@@ -1,11 +1,4 @@
-.PHONY: build build-docker check frontend-bundle-check frontend-check frontend-test install lint test verify
-
-build:
-	npm --prefix frontend ci --ignore-scripts
-	npm --prefix frontend run build
-
-build-docker:
-	frontend/build.sh
+.PHONY: install frontend-biome frontend-biome-fix  frontend-check frontend-test integration-check integration-test verify frontend-build frontend-build-docker
 
 install:
 	uv venv --allow-existing
@@ -13,13 +6,10 @@ install:
 	npm --prefix frontend ci --ignore-scripts
 
 frontend-biome:
-	cd frontend && biome ci .
+	biome ci frontend/
 
 frontend-biome-fix:
-	cd frontend && biome check --write src
-
-lint:
-	npm --prefix frontend exec -- tsc --project frontend/tsconfig.json --noEmit
+	biome check --write frontend/src
 
 frontend-check:
 	npm --prefix frontend ci --ignore-scripts
@@ -27,7 +17,9 @@ frontend-check:
 	npm --prefix frontend ls --all
 	npm --prefix frontend audit
 	npm --prefix frontend audit --omit=dev
-	$(MAKE) frontend-bundle-check
+	output_dir=$$(mktemp -d); \
+	trap 'rm -rf "$$output_dir"' EXIT; \
+	cd frontend && npx --no-install vite build --outDir "$$output_dir" --emptyOutDir
 
 frontend-test:
 	npm --prefix frontend ci --ignore-scripts
@@ -37,18 +29,20 @@ frontend-coverage:
 	npm --prefix frontend ci --ignore-scripts
 	npm --prefix frontend run coverage
 
-frontend-bundle-check:
-	output_dir=$$(mktemp -d); \
-	trap 'rm -rf "$$output_dir"' EXIT; \
-	cd frontend && npx --no-install vite build --outDir "$$output_dir" --emptyOutDir
-
-check:
+integration-check:
 	ruff format --check .
 	ruff check .
 	mypy .
 	basedpyright .
 
-test:
+integration-test:
 	pytest
 
-verify: frontend-check frontend-test check test
+verify: frontend-biome frontend-check frontend-test integration-check integration-test
+
+frontend-build:
+	npm --prefix frontend ci --ignore-scripts
+	npm --prefix frontend run build
+
+frontend-build-docker:
+	frontend/build.sh
