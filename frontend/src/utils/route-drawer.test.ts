@@ -134,9 +134,7 @@ describe('drawRouteOnMap()', () => {
 
         const layers = routeLayer.getLayers();
         layers.forEach((layer: L.Layer) => {
-          if (layer.fire) {
-            layer.fire('click');
-          }
+          layer.fire('click');
         });
       }).not.toThrow();
     });
