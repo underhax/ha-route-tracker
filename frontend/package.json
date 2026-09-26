@@ -12,7 +12,7 @@
     "@vitest/coverage-v8": "^5.0.1",
     "happy-dom": "^20.14.0",
     "typescript": "^7.0.2",
-    "vite": "^8.2.2",
+    "vite": "^8.3.0",
     "vite-plugin-compression2": "^2.5.3",
     "vite-plugin-css-injected-by-js": "^5.0.2",
     "vitest": "^5.0.1"
