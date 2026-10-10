@@ -42,7 +42,6 @@ describe('drawRouteOnMap()', () => {
       localize = vi.fn((key: string) => `trans_${key}`);
 
       baseOptions = {
-        currentProvider: 'OpenStreetMap',
         enableGeocoding: false,
         enableRouting: false,
         fallbackLat: 10,
@@ -99,21 +98,12 @@ describe('drawRouteOnMap()', () => {
       drawRouteOnMap({ ...baseOptions, isSatellite: true, points });
       drawRouteOnMap({
         ...baseOptions,
-        currentProvider: 'CartoDB Voyager',
         isDarkMode: true,
         isSatellite: false,
         points,
       });
       drawRouteOnMap({
         ...baseOptions,
-        currentProvider: 'OpenStreetMap',
-        isDarkMode: true,
-        isSatellite: false,
-        points,
-      });
-      drawRouteOnMap({
-        ...baseOptions,
-        currentProvider: 'OpenStreetMap',
         isDarkMode: false,
         isSatellite: false,
         points,

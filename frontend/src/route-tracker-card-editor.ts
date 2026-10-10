@@ -279,12 +279,13 @@ export class RouteTrackerCardEditor extends LitElement implements LovelaceCardEd
         <div>
           <h4>${localize('editor.map_provider', lang)}</h4>
           <select
-            .value=${this._config.map_provider ?? 'osm_default'}
+            .value=${
+              this._config.map_provider === 'esri_satellite' ? 'esri_satellite' : 'osm_default'
+            }
             @change=${this._onMapProviderChange}
             class="form-select"
           >
             <option value="osm_default">OpenStreetMap DE</option>
-            <option value="carto_voyager">CartoDB Voyager</option>
             <option value="esri_satellite">Esri Satellite</option>
           </select>
         </div>

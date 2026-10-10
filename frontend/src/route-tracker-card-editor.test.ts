@@ -80,9 +80,19 @@ describe('RouteTrackerCardEditor', () => {
     const firstSelect = selectsNonNull[0];
     expect(firstSelect).toBeDefined();
     expect((firstSelect as HTMLSelectElement).value).toBe('osm_default');
+    expect(
+      Array.from((firstSelect as HTMLSelectElement).options, (option) => option.value),
+    ).toEqual(['osm_default', 'esri_satellite']);
     const secondSelect = selectsNonNull[1];
     expect(secondSelect).toBeDefined();
     expect((secondSelect as HTMLSelectElement).value).toBe('auto');
+  });
+
+  it('uses the default map provider for unsupported config values', async () => {
+    editor.setConfig({ map_provider: 'unsupported' });
+    await editor.updateComplete;
+
+    expect(editor.shadowRoot?.querySelector('select')?.value).toBe('osm_default');
   });
 
   it('fires config-changed when map_provider changes', async () => {
@@ -97,11 +107,11 @@ describe('RouteTrackerCardEditor', () => {
     const selects = editor.shadowRoot?.querySelectorAll('select');
     if (selects && selects.length > 0) {
       const select = selects[0] as HTMLSelectElement;
-      select.value = 'carto_voyager';
+      select.value = 'esri_satellite';
       select.dispatchEvent(new Event('change'));
     }
 
-    expect(firedConfig.map_provider).toBe('carto_voyager');
+    expect(firedConfig.map_provider).toBe('esri_satellite');
   });
 
   it('fires config-changed when theme_mode changes', async () => {

@@ -53,7 +53,6 @@ export interface DrawRouteOptions {
   routeLayer: L.LayerGroup;
   isSatellite: boolean;
   isDarkMode: boolean;
-  currentProvider: string;
   localize: (key: string, lang: string) => string;
   language: string;
   fallbackLat: number;
@@ -73,13 +72,8 @@ interface RouteColorPalette {
   beadFillColor: string;
 }
 
-function resolveRouteColors(
-  isSatellite: boolean,
-  isDarkMode: boolean,
-  currentProvider: string,
-): RouteColorPalette {
+function resolveRouteColors(isSatellite: boolean, isDarkMode: boolean): RouteColorPalette {
   const isDark = isDarkMode && !isSatellite;
-  const isCartoDark = isDark && currentProvider === 'CartoDB Voyager';
 
   if (isSatellite) {
     return {
@@ -88,16 +82,6 @@ function resolveRouteColors(
       beadFillColor: '#5db4cb',
       routeColor: '#00CCE6',
       routeOpacity: 0.4,
-    };
-  }
-
-  if (isCartoDark) {
-    return {
-      arrowColor: '#79abb3',
-      beadBorderColor: '#b2d2d5',
-      beadFillColor: '#41838c',
-      routeColor: '#45949c',
-      routeOpacity: 0.9,
     };
   }
 
@@ -127,7 +111,6 @@ export function drawRouteOnMap(options: DrawRouteOptions): L.LatLngBounds | unde
     routeLayer,
     isSatellite,
     isDarkMode,
-    currentProvider,
     localize,
     language,
     fallbackLat,
@@ -146,7 +129,7 @@ export function drawRouteOnMap(options: DrawRouteOptions): L.LatLngBounds | unde
     return undefined;
   }
 
-  const colors = resolveRouteColors(isSatellite, isDarkMode, currentProvider);
+  const colors = resolveRouteColors(isSatellite, isDarkMode);
 
   if (points.length > 1) {
     drawPolyline(points, routeLayer, colors);

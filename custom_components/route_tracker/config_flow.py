@@ -13,6 +13,8 @@ from homeassistant.config_entries import (
 from homeassistant.const import CONF_NAME
 from homeassistant.core import callback
 from homeassistant.helpers import selector
+from probatio.markers import Optional, Required
+from probatio.schema import Schema
 
 from .const import (
     CONF_TRACKED_ENTITIES,
@@ -68,9 +70,9 @@ def tracker_friendly_names(value: object) -> dict[str, str]:
     }
 
 
-STEP_USER_DATA_SCHEMA = vol.Schema(
+STEP_USER_DATA_SCHEMA = Schema(
     {
-        vol.Required(CONF_NAME, default="Route Tracker"): str,
+        Required(CONF_NAME, default="Route Tracker"): str,
     }
 )
 
@@ -165,13 +167,13 @@ class RouteTrackerOptionsFlowHandler(OptionsFlow):
 
         return self.async_show_form(
             step_id="init",
-            data_schema=vol.Schema(
+            data_schema=Schema(
                 {
-                    vol.Optional(
+                    Optional(
                         CONF_TRACKED_ENTITIES,
                         default=tracked_default,
                     ): entity_sel,
-                    vol.Optional(
+                    Optional(
                         "minimal_distance",
                         default=options.get(
                             "minimal_distance", DEFAULT_MINIMAL_DISTANCE
@@ -207,7 +209,7 @@ class RouteTrackerOptionsFlowHandler(OptionsFlow):
         )
         name_selector = text_selector(selector.TextSelectorConfig())
         name_schema = {
-            vol.Optional(
+            Optional(
                 entity_id,
                 default=current_names.get(entity_id, ""),
             ): name_selector
@@ -216,5 +218,5 @@ class RouteTrackerOptionsFlowHandler(OptionsFlow):
 
         return self.async_show_form(
             step_id="friendly_names",
-            data_schema=vol.Schema(name_schema),
+            data_schema=Schema(name_schema),
         )

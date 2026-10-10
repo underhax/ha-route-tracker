@@ -7,14 +7,13 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.const import CONF_NAME
 from homeassistant.data_entry_flow import FlowResultType
-from homeassistant.helpers import config_validation as cv
-from voluptuous_serialize import convert
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
     from homeassistant.core import HomeAssistant
     from homeassistant.helpers.discovery_flow import DiscoveryKey
+    from probatio.schema import Schema
 
 from custom_components.route_tracker.config_flow import (
     tracker_friendly_names,
@@ -96,8 +95,7 @@ async def test_options_flow_collects_device_trackers_and_friendly_names(
     result = await hass.config_entries.options.async_init(entry.entry_id)
 
     assert result.get("type") == FlowResultType.FORM
-    data_schema = cast("vol.Schema", result.get("data_schema"))
-    assert convert(data_schema, custom_serializer=cv.custom_serializer)
+    data_schema = cast("Schema", result.get("data_schema"))
     assert data_schema({}) == {
         CONF_TRACKED_ENTITIES: [],
         "minimal_distance": DEFAULT_MINIMAL_DISTANCE,
@@ -119,7 +117,7 @@ async def test_options_flow_collects_device_trackers_and_friendly_names(
     assert name_result.get("type") == FlowResultType.FORM
     assert name_result.get("step_id") == "friendly_names"
 
-    name_schema = cast("vol.Schema", name_result.get("data_schema"))
+    name_schema = cast("Schema", name_result.get("data_schema"))
     assert name_schema({"device_tracker.phone": "Phone history"}) == {
         "device_tracker.phone": "Phone history"
     }

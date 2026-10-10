@@ -338,8 +338,8 @@ describe('RouteTrackerCard', () => {
   });
 
   describe('initMap()', () => {
-    it('initializes map with proper providers and themes', async () => {
-      card.setConfig({ entities: [], map_provider: 'carto_voyager' } as any);
+    it('initializes map with the default provider', async () => {
+      card.setConfig({ entities: [], map_provider: 'osm_default' });
       const existingMap = asCard(card).map;
       if (existingMap) {
         existingMap.remove();
@@ -349,7 +349,7 @@ describe('RouteTrackerCard', () => {
 
       const mapContainer = card.shadowRoot?.getElementById('map');
       expect(mapContainer).not.toBeNull();
-      expect(asCard(card)._currentProvider).toBe('CartoDB Voyager');
+      expect(asCard(card)._currentProvider).toBe('OpenStreetMap DE');
     });
 
     it('toggles manual theme correctly', async () => {

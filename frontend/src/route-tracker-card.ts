@@ -322,10 +322,6 @@ export class RouteTrackerCard extends LitElement {
     let defaultLayer = baseMaps['OpenStreetMap DE'];
     this._currentProvider = 'OpenStreetMap DE';
 
-    if (providerKey === 'carto_voyager') {
-      defaultLayer = baseMaps['CartoDB Voyager'];
-      this._currentProvider = 'CartoDB Voyager';
-    }
     if (providerKey === 'esri_satellite') {
       defaultLayer = baseMaps['Esri Satellite'];
       this._currentProvider = 'Esri Satellite';
@@ -603,7 +599,6 @@ export class RouteTrackerCard extends LitElement {
     if (!this.map || !this.routeLayer) return;
 
     const bounds = drawRouteOnMap({
-      currentProvider: this._currentProvider,
       enableGeocoding: this.config.enable_geocoding ?? false,
       enableRouting: this.config.enable_routing ?? false,
       fallbackLat: this.hass.config.latitude || 0.0,
@@ -651,11 +646,6 @@ export class RouteTrackerCard extends LitElement {
 
   private updateMapThemeClass(): void {
     if (!this.mapContainer) return;
-
-    this.mapContainer.classList.toggle(
-      'carto-provider',
-      this._currentProvider === 'CartoDB Voyager',
-    );
 
     if (this._currentProvider === 'Esri Satellite') {
       this.mapContainer.classList.remove('dark-mode');

@@ -17,7 +17,7 @@ Route Tracker is a Home Assistant custom integration and Lovelace card for viewi
 
 Route Tracker does not require an API key, a long-lived access token, or an external route service for its core functionality. History requests use the current authenticated Home Assistant session.
 
-Route Tracker uses map tiles from [OpenStreetMap DE](https://tile.openstreetmap.de/) (default), [Carto Voyager](https://cartocdn.com/), or [ArcGIS Satellite](https://arcgisonline.com/) depending on your configuration. The browser connects to the selected service while rendering the map.
+Route Tracker uses map tiles from [OpenStreetMap DE](https://tile.openstreetmap.de/) (default) or [ArcGIS Satellite](https://arcgisonline.com/) depending on your configuration. The browser connects to the selected service while rendering the map.
 
 If you manually enable the "Geocoding" or "Routing" features in the card settings, be aware that these features transmit your coordinates to third-party services distinct from your configured map provider. Your coordinates will be sent **only** when you explicitly click the corresponding links in the map popup:
 - **Geocoding:** Sends coordinate data to the [Nominatim API](https://nominatim.openstreetmap.org/) to reverse-geocode GPS coordinates into a human-readable address.
@@ -221,7 +221,7 @@ By default, this minimal configuration will:
 | `entities` | List of entity objects | All configured trackers and linked persons | Trackers or persons available in the card's selector to draw routes for. Each can have an optional `name` override. |
 | `zones` | List of entity objects | None | Zones to display on the map. Each can have an optional `name` override. |
 | `theme_mode` | `auto`, `light`, `dark` | `auto` | Forces the map to render in a specific theme, or follow HA. |
-| `map_provider` | `osm_default`, `carto_voyager`, `esri_satellite` | `osm_default` | The base map tile provider. |
+| `map_provider` | `osm_default`, `esri_satellite` | `osm_default` | The base map tile provider. |
 | `enable_geocoding` | `true`, `false` | `false` | Adds a popup action to reverse-geocode the point's coordinates into a physical address. |
 | `enable_routing` | `true`, `false` | `false` | Adds a popup link to get directions to the point via an external service. |
 | `route_origin` | `device` or zone entity ID (e.g. `zone.home`) | `device` | The starting point for the route. `device` uses your current physical location, while a zone uses its center coordinates. |

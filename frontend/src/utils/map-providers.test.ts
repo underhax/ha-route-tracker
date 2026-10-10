@@ -10,7 +10,6 @@ vi.mock('leaflet', () => {
 describe('getBaseMaps()', () => {
   it('returns defined base map configurations', () => {
     const maps = getBaseMaps();
-    expect(Object.keys(maps).length).toBeGreaterThan(0);
-    expect(maps['OpenStreetMap DE']).toBeDefined();
+    expect(Object.keys(maps)).toEqual(['OpenStreetMap DE', 'Esri Satellite']);
   });
 });
