@@ -29,7 +29,7 @@ Consider these external requests when evaluating your network and location-priva
 
 Tested with:
 
-- Home Assistant 2026.9.1
+- Home Assistant 2026.10.0
 - HACS 2.0.5
 
 ## Installation
