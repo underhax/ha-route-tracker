@@ -1,5 +1,5 @@
 homeassistant==2026.10.0
-pytest-homeassistant-custom-component==0.13.371
+pytest-homeassistant-custom-component==0.13.372
 ruff==0.17.0
 mypy==2.4.0
 basedpyright==1.40.2
