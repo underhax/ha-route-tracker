@@ -1,11 +1,11 @@
 import type { HomeAssistant } from 'custom-card-helpers';
 import * as L from 'leaflet';
-import { html, LitElement, type PropertyValues, type TemplateResult, unsafeCSS } from 'lit';
+import { html, LitElement, type PropertyValues, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import 'leaflet-polylinedecorator';
-import leafletCss from 'leaflet/dist/leaflet.css?inline';
 import './route-tracker-card-editor.ts';
 import { cardLayoutStyles } from './css/card-layout.ts';
+import { leafletBaseStyles } from './css/leaflet-base.ts';
 import { leafletOverridesStyles } from './css/leaflet-overrides.ts';
 import { mapFiltersStyles } from './css/map-filters.ts';
 import { popupStyles } from './css/popup.ts';
@@ -125,7 +125,7 @@ export class RouteTrackerCard extends LitElement {
   private routeBounds: L.LatLngBounds | null = null;
 
   static override styles = [
-    unsafeCSS(leafletCss),
+    leafletBaseStyles,
     cardLayoutStyles,
     mapFiltersStyles,
     uiControlsStyles,

@@ -1,4 +1,4 @@
-.PHONY: install frontend-biome frontend-biome-fix frontend-check frontend-test frontend-outdated frontend-outdated-all frontend-coverage integration-check integration-test integration-outdated verify frontend-build frontend-build-docker
+.PHONY: install frontend-biome frontend-biome-fix frontend-biome-migrate frontend-check frontend-test frontend-outdated frontend-outdated-all frontend-coverage integration-check integration-test integration-outdated integration-outdated-all verify frontend-build frontend-build-docker
 
 install:
 	uv venv --allow-existing
@@ -10,6 +10,9 @@ frontend-biome:
 
 frontend-biome-fix:
 	biome check --write frontend/src
+
+frontend-biome-migrate:
+	biome migrate --write
 
 frontend-check:
 	npm --prefix frontend ci --ignore-scripts
@@ -45,7 +48,10 @@ integration-test:
 	pytest
 
 integration-outdated:
-	.venv/bin/pip list --outdated
+	uv pip tree --depth 0 --outdated
+
+integration-outdated-all:
+	uv pip list --outdated
 
 verify: frontend-biome frontend-check frontend-test integration-check integration-test
 
